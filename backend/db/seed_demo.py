@@ -63,12 +63,31 @@ async def seed(folder: str = "demo/precomputed", name: str = "Demo — Hook Batt
     return test["id"]
 
 
+async def seed_docs(path: str = "demo/seed/demo_docs.json") -> None:
+    """Upsert raw §4-shaped documents {users, tests, variants, scores} — e.g. D's
+    hand-crafted demo set (curves are formula-consistent; winner matches objective).
+    Requires Mongo mode. Usage: python -m backend.db.seed_demo --docs [path]"""
+    from backend.db.mongo import db
+
+    data = json.loads(Path(path).read_text())
+    d = db()
+    total = 0
+    for coll in ("users", "tests", "variants", "scores"):
+        for doc in data.get(coll, []):
+            await d[coll].replace_one({"_id": doc["_id"]}, doc, upsert=True)
+            total += 1
+    print(f"seeded {total} docs from {path}")
+
+
 if __name__ == "__main__":
     from dotenv import load_dotenv
 
     load_dotenv(Path(__file__).resolve().parents[1] / ".env")
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    name = "Demo — Hook Battle"
-    if "--name" in sys.argv:
-        name = sys.argv[sys.argv.index("--name") + 1]
-    asyncio.run(seed(args[0] if args else "demo/precomputed", name))
+    if "--docs" in sys.argv:
+        asyncio.run(seed_docs(args[0] if args else "demo/seed/demo_docs.json"))
+    else:
+        name = "Demo — Hook Battle"
+        if "--name" in sys.argv:
+            name = sys.argv[sys.argv.index("--name") + 1]
+        asyncio.run(seed(args[0] if args else "demo/precomputed", name))

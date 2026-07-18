@@ -12,7 +12,7 @@ from fastapi import APIRouter
 from fastapi.responses import FileResponse
 
 from backend.api.errors import ApiError, not_found
-from backend.media import resolve_media
+from backend.media import reload_media, resolve_media
 
 router = APIRouter()
 
@@ -26,5 +26,7 @@ def get_media(media_key: str):
     except ValueError:
         raise ApiError("bad_request", "invalid media_key")
     if not path.is_file():
-        raise not_found("media_key")
+        reload_media()  # may have been committed by another container — refresh once
+        if not path.is_file():
+            raise not_found("media_key")
     return FileResponse(path, media_type=_MEDIA_TYPES.get(path.suffix, "application/octet-stream"))

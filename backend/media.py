@@ -29,6 +29,19 @@ def commit_media() -> None:
             pass  # background commit still covers us
 
 
+def reload_media() -> None:
+    """Reader-side refresh: a Volume snapshot is per-container-start, so media
+    committed by ANOTHER container (a second api() instance, the GPU worker) is
+    invisible until reload. Called on serve-miss. No-op off Modal."""
+    if os.environ.get("MEDIA_ROOT") == "/cache":
+        try:
+            from backend.modal_app import cache
+
+            cache.reload()
+        except Exception:
+            pass
+
+
 def resolve_media(media_key: str) -> Path:
     """media_key ('media/<id>.mp4') -> absolute path, confined to the media/ subtree.
 
