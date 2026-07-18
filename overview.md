@@ -1,6 +1,6 @@
 # Reeled In — Project Overview
 
-**Hack the 6ix 2026 · pivot from "Loopy" → "Reeled In"**
+**Hack the 6ix 2026 · Reeled In**
 Last updated: 2026-07-18
 
 ## One-liner
