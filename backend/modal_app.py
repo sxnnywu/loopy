@@ -110,6 +110,12 @@ def api():
     # Deployed default: real D integrations (ElevenLabs/Gemini/Backboard). Local dev
     # defaults to stub so keyless teammates still run; override via the secret.
     os.environ.setdefault("GENERATION_MODE", "real")
+    # CORS allowlist (CONTRACTS §6 layer 4): A's Base44 app + A's local dev.
+    # Not a secret (origins are public); the secret can still override.
+    os.environ.setdefault(
+        "ALLOWED_ORIGINS",
+        "https://reeled-in.base44.app,http://localhost:3000,http://localhost:5173",
+    )
     from backend.main import app as fastapi_app
 
     return fastapi_app
