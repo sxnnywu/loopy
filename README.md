@@ -84,10 +84,23 @@ B (scores)    -- stored -> C (Mongo)     [precomputed demo path]
 
 Integration order (last third): C swaps in B's real scorer → C swaps in D's real generators → A swaps mock API for C's real endpoints → precomputed demo scores seeded into Mongo. Riskiest lane is B (isolated on purpose); broadest is C. Per-person plan files land in the repo as written — name assignments to be added here as they're confirmed.
 
+### Build phases
+
+Full phase plan, repo layout with per-file owners, and the cross-person dependency ledger: [`parallel-implementation-plan.md`](parallel-implementation-plan.md).
+
+- **Phase 0 — Contracts & scaffold** *(blocker, whole team, ~first hour)*: freeze `CONTRACTS.md` (Score Object, API, token format, Mongo shapes); C scaffolds repo + Atlas, B boots Modal + **accepts the gated HuggingFace LLaMA-3.2 license hour 1**, A creates the Base44 project, D grabs stock clips + keys.
+- **Phase 1 — Build against mocks**: all four fully independent — the maximum-parallelism window.
+- **Phase 2 — Real pipelines**: B finishes networks/metrics/precompute; C real persistence; D real variants + Backboard. Key early hand-off: **D's demo dataset → B** for precompute.
+- **Phase 3 — Integration** *(the only sequential part)*: B→C and D→C (parallel), then C→A; seed precomputed demo scores into Mongo.
+- **Phase 4 — Demo hardening**: polish, hand-validate examples, `keep_warm`, fallback recording, rehearse.
+
+**Critical path:** CONTRACTS → B's TRIBE `score()` (the long pole) → C integration → seed + demo.
+
 ## Docs
 
 - [`overview.md`](overview.md) — project overview: scope, prize tracks, hackathon logistics, open decisions
 - [`team-division.md`](team-division.md) — the 4-lane split, frozen contracts, dependency map, integration order
+- [`parallel-implementation-plan.md`](parallel-implementation-plan.md) — phases 0–4, annotated repo layout, dependency ledger, critical path
 - [`PRD.md`](PRD.md) — product requirements: users, features, metric definition, risks
 - [`tech-architecture.md`](tech-architecture.md) — full system design, endpoints, data flow, secrets
 - [`how-tribe-v2-works.md`](how-tribe-v2-works.md) — TRIBE v2 deep-dive: pipeline, the five networks, limits, runtime
