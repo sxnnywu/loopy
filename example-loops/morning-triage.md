@@ -1,39 +1,40 @@
-# Example Loop Spec — Morning-Triage
+# Example Loop Spec — Morning-Triage (6-agent CI-triage)
 
-The one loop Loopy is demoed on, and the loop we build our product understanding around. It's the canonical "Build Your First Loop" example from the *Loop Engineering* paper: a dev-automation loop that triages the morning backlog, fixes items via sub-agents, has a judge review, opens PRs, records a post-run critique, and moves on — with no human in the inner loop.
+The one loop Loopy is demoed on, and the loop we build our product understanding around. It's the canonical "Build Your First Loop" example from the *Loop Engineering* paper (p.9): a dev-automation loop that triages red CI builds, routes each failure to a specialist fixer, has an adversarial judge review, merges or bounces, and moves on — with no human in the inner loop.
 
 This doc is the source of truth for the example loop. It defines the agents, topology, seeds, the answer-key oracle, and exactly what Loopy tests on it. Shapes conform to `SHARED_CONTRACTS.md`.
+
+> **Updated 2026-07-17 (Jay/C): expanded from 3 agents to 6.** The 3-agent version was near-linear (one fixer, one reviewer). The 6-agent version adds a classification step + three specialists, which makes routing itself testable: 14 handoff edges instead of 4, misrouting becomes a measurable failure class, and per-handoff fragility gets a real graph to rank. Tier-1/Tier-2 analysis for this loop is already implemented and verified in `backend/` (see PERSON_C_PLAN.md). Post-run critique from the 3-agent draft is dropped.
 
 ---
 
 ## 0. Source loop (we adopt, not invent)
 
-We do **not** author this loop from scratch. We adopt the published, community-recommended **Daily Triage** loop and wrap it in our test harness:
+We do **not** author this loop from scratch. We adopt the published **Daily Triage** loop pattern and expand it to the specialist-routing shape:
 
 - **Source:** `cobusgreyling/loop-engineering` → **`examples/grok/daily-triage.md`**
   https://github.com/cobusgreyling/loop-engineering/blob/main/examples/grok/daily-triage.md
 - Patterns index: https://github.com/cobusgreyling/loop-engineering/blob/main/patterns/README.md
+- **Topology basis:** the annotated "first loop" in the *Loop Engineering* IEEE working note, §XII p.9 (discovery skill → worktree per finding → generator/evaluator split → human inbox). Its §VI "Five Ways a Loop Goes Wrong" is the failure taxonomy our findings map to.
 - Also referenced for triage styles: `serenakeyitan/awesome-agent-loops` (CC BY 4.0) — https://github.com/serenakeyitan/awesome-agent-loops
 
-**Why adopt a real loop:** stronger demo story ("we didn't build a strawman rigged to fail — we QA'd the *published* daily-triage loop the community recommends, and its reviewer nods 9% of the time") and less scaffolding (we lift its prompts/topology instead of inventing them).
+**Why adopt a real loop:** stronger demo story ("we didn't build a strawman rigged to fail — we QA'd the *published* daily-triage loop the community recommends, and its evaluator nods broken fixes through") and less scaffolding (we lift its prompts/structure instead of inventing them).
 
 > **TODO before the event:** confirm the repo's `LICENSE` and attribute the source loop in our README + demo. (awesome-agent-loops is CC BY 4.0; verify cobusgreyling's terms.)
 
 ---
 
-## 1. What the loop does (from the source + the paper)
+## 1. What the loop does
 
-A single turn realizes the five moves of a loop, plus a post-run critique:
+A single turn realizes the five moves of a loop:
 
-1. **Discovery** — read what's new: CI runs that failed since yesterday, issues opened in the last 24h, commits merged since the last run, and the previous state file. Judge each candidate: *actionable now? blocks a release? already tracked → skip.* Keep only what's worth acting on.
-2. **Handoff** — for each kept item, spin up an isolated worktree and hand it to a fixer sub-agent with a goal (stop-condition).
-3. **(Generation)** — the fixer drafts a minimal fix.
-4. **Verification** — a separate reviewer/judge ("assume broken until proven") runs the tests and either approves or rejects with reasons. The source loop explicitly suggests a **stronger model / higher reasoning effort** here — that's our A/B knob.
-5. **Persistence** — write every finding + status to the state file (STATE.md), committed back so the next run remembers.
-6. **Human review** — PRs are opened, never auto-merged; anything uncertain lands in an inbox.
-7. **Post-run critique** — after the run, the loop records a self-assessment: high-noise items, false positives (incorrectly flagged), items that should've been deprioritized, human-review friction, and *one change to improve the next cycle*. This is the loop grading its own run.
+1. **Discovery** — `ci_monitor` reads what's new: CI runs that failed since the last tick, issues opened in the last 24h, commits merged since the last run. Each actionable failure becomes a finding.
+2. **Triage / routing** — `triage_agent` classifies each finding (**flaky_test | infra | regression | dependency**) and hands it to the matching specialist. If a specialist bounces it back ("not my kind of problem"), triage re-classifies with their evidence.
+3. **Handoff + Generation** — the specialist (`test_fixer` / `infra_fixer` / `dep_fixer`) opens an isolated worktree and drafts a minimal fix.
+4. **Verification** — `evaluator` ("assume broken until proven otherwise") runs the tests and either PASSes (merged, ticket closed) or REJECTs back to the specialist with reasons. The evaluator's model is our **A/B knob**.
+5. **Persistence** — every finding + status is written to the state file (Backboard memory), so the next run remembers.
 
-**Scheduling** (a daily trigger) is what makes it a loop. For Loopy we don't need the schedule — each sandbox runs one full turn (incl. the post-run critique) over one seeded backlog.
+Anything the evaluator can't confidently judge goes to a human inbox (never auto-merged). **Scheduling** (a daily trigger) is what makes it a loop; for Loopy each sandbox runs one full turn over one seeded incident.
 
 ---
 
@@ -41,172 +42,144 @@ A single turn realizes the five moves of a loop, plus a post-run critique:
 
 We do **not** run this against a real repo/GitHub/CI. We build a **controlled loop**:
 
-- **Real agents** — `triage_agent`, `fixer_agent`, `reviewer_agent` are real Gemini agents making real decisions, using prompts lifted from the source loop.
-- **Synthetic repo/backlog fixture** — each sandbox is seeded with a generated backlog of CI failures / issues / commits, each carrying a **planted bug** from a small archetype library.
+- **Real agents** — all six are real Gemini agents making real decisions, prompts adapted from the source pattern.
+- **Synthetic incident fixture** — each sandbox is seeded with a generated CI incident carrying a **planted bug** from a small archetype library.
 - **Mocked side effects** — "open a PR" writes to the state file; "run tests" is a **deterministic checker** we own.
-- **Answer key (the oracle)** — for every planted bug we know the correct outcome (which test must pass, which files must not change, correct priority). Ground truth is what lets Loopy *prove* when the reviewer nodded — and whether the post-run critique was honest.
+- **Answer key (the oracle)** — for every planted incident we know the ground truth: the true failure kind, which test must pass, which files must not change. Ground truth is what lets Loopy *prove* when triage misrouted or the evaluator nodded.
 
 ---
 
-## 3. Build plan — how we build onto the existing loop
+## 3. Build plan
 
-Three buckets: what we **reuse** from daily-triage, what we **adapt** so it's testable, and what we **add** (this is Loopy's value).
+### Reuse (from the source pattern + paper)
+- Five-moves structure; the skeptical-evaluator prompt ("do not praise; find what fails").
+- The prioritization rubric (actionable / blocks release / already tracked → skip).
+- The "stronger model for the judge" guidance → our **A/B knob**.
+- The state-file persistence pattern → **Backboard memory** scoped per sandbox.
 
-### Reuse verbatim (lift from `daily-triage.md`)
-- The five-moves structure + the **triage / minimal-fix / reviewer skill prompts** → become our three `AgentDef.system_prompt`s.
-- The prioritization rubric (high-priority / watch / noise → skip).
-- The reviewer's "use a stronger model" guidance → our **A/B knob** (§7).
-- The **post-run critique** fields → our critique self-report schema (§8).
-- The `STATE.md` persistence pattern → **Backboard memory** scoped per sandbox.
-
-### Adapt (swap the I/O so it runs hermetically at scale)
+### Adapt (hermetic at scale)
 | Source loop does | We swap it for |
 |---|---|
-| Real GitHub / issue-tracker discovery | Synthetic backlog fixture (seed_input) |
+| Real GitHub / CI discovery | Synthetic incident fixture (seed_input) |
 | Real worktree + `open PR` | Mocked — writes to state file |
 | Real test runner | Deterministic **oracle** checker |
 | Daily cron / scheduler | Loopy fan-out (one turn per sandbox) |
 | MCP connectors | Stubbed |
 
 ### Add (net-new — the QA layer)
-- The **answer-key oracle** per seed (ground truth).
-- **Event instrumentation** — emit contract-shaped `Event`s for every agent message, tool call, state update, critique, and termination.
-- The **seed/fixture library** — ~10 bug archetypes → 100 distinct backlogs.
-- **Planted failure scenarios** that guarantee the demo findings (nodding reviewer, self-assessment blind spot, stall).
+- The **answer-key oracle** per seed (`true_kind`, `must_pass`, `must_not_touch`).
+- **Event instrumentation** — contract-shaped `Event`s for every message, tool call, state update, termination. Runner MUST emit payload keys `classified` (triage), `verdict` (evaluator), `must_pass_ok` (oracle) — Tier-2 analysis reads them.
+- The **seed/archetype library** — ~10 incident archetypes → 100 distinct seeds.
+- **Planted failure scenarios** that guarantee the demo findings (§8).
 
-### Phasing (Orchestration / Person A, aligns with `PARALLEL_IMPLEMENTATION_PLAN.md`)
-1. **Phase 1 (unblocker):** port the 3 prompts + topology into a `LoopSpec` JSON; stub `loop_runner.run(spec, seed)`; make the **fake emitter** emit *morning-triage-shaped* events (planted stall + planted nod) so B/C/D build against the real shape.
-2. **Phase 2:** real `loop_runner` executes the 3 Gemini agents over a synthetic backlog; add the oracle checker, the post-run critique step, and real event emission.
-3. **Phase 3:** build the seed library for varied runs; plant the failure scenarios; scale 50 → 100 → 1,000; wire the A/B (weak vs strong reviewer).
+### Phasing (Orchestration / Person A)
+1. **Phase 1 (unblocker):** LoopSpec JSON is already committed (`backend/examples/ci_triage_spec.json`); fake emitter exists (`backend/scripts/seed_ci_triage_run.py` — seeds Mongo directly; re-point it at B's collector when live).
+2. **Phase 2:** real `loop_runner` executes the 6 Gemini agents over synthetic incidents; oracle checker; real event emission.
+3. **Phase 3:** seed library variation; scale 50 → 100 → 1,000; wire the A/B (weak vs strong evaluator).
 
 ---
 
 ## 4. Agents (`AgentDef[]`)
 
-```json
-[
-  {
-    "agent_id": "triage_agent",
-    "name": "Triage / Discovery / Critique",
-    "model": "gemini-3.1-flash-lite",
-    "system_prompt": "You are the morning triage orchestrator (prompt adapted from daily-triage.md). Read the backlog (CI failures, issues, commits) and prior state. For each item decide: actionable now? blocks a release? already tracked -> skip. Prioritize kept items, write them to state, and hand off ONE at a time to the fixer with a clear goal/stop-condition. After all items are resolved, produce a POST-RUN CRITIQUE recording: high-noise items, false positives, items to deprioritize, human-review friction, and one change for next cycle.",
-    "tools": ["read_ci", "read_issues", "read_commits", "read_state", "write_state", "handoff", "post_run_critique"]
-  },
-  {
-    "agent_id": "fixer_agent",
-    "name": "Fixer (sub-agent)",
-    "model": "gemini-3.5-flash",
-    "system_prompt": "You are given ONE triage item and a goal (stop-condition). Draft a minimal fix that satisfies the goal. Respect any constraints in the handoff (e.g. files you must not touch). Submit your fix for review.",
-    "tools": ["read_repo", "draft_fix", "run_tests"]
-  },
-  {
-    "agent_id": "reviewer_agent",
-    "name": "Reviewer / Judge",
-    "model": "gemini-3.5-flash",
-    "system_prompt": "You are an adversarial reviewer. ASSUME THE FIX IS BROKEN until proven otherwise. Run the tests, check the diff against the goal and constraints. Approve ONLY if every check holds. Otherwise reject with specific reasons. Do not praise; find what fails.",
-    "tools": ["run_tests", "read_diff", "approve", "reject"]
-  }
-]
-```
+Six agents — full definitions live in **`backend/examples/ci_triage_spec.json`** (committed, contract-shaped). Summary:
 
-> **Model choices:** cheap `flash-lite` for high-frequency triage/critique, stronger `flash` for the fixer and reviewer (the judge is the loop's floor — don't cheap out). The reviewer model is the **A/B knob**.
+| agent_id | Role | Model tier |
+|---|---|---|
+| `ci_monitor` | Discovery: watches CI, reports each failure | flash-lite |
+| `triage_agent` | Classifies each finding, routes to a specialist, re-triages bounces | flash-lite |
+| `test_fixer` | Fixes flaky tests / broken assertions in a worktree | flash |
+| `infra_fixer` | Fixes runner/cache/network failures in a worktree | flash |
+| `dep_fixer` | Fixes dependency/regression failures in a worktree | flash |
+| `evaluator` | Adversarial reviewer; PASS merges, REJECT bounces back | flash — **the A/B knob** |
+
+> Cheap tier for high-frequency monitor/triage; stronger tier for fixers and the judge (the judge is the loop's floor — don't cheap out).
 
 ## 5. Topology (`topology[]` — `{from_agent, to_agent, condition}`)
 
-```json
-[
-  {"from_agent": "triage_agent",  "to_agent": "fixer_agent",    "condition": "item_kept"},
-  {"from_agent": "fixer_agent",   "to_agent": "reviewer_agent", "condition": "fix_drafted"},
-  {"from_agent": "reviewer_agent","to_agent": "fixer_agent",    "condition": "rejected"},
-  {"from_agent": "reviewer_agent","to_agent": "triage_agent",   "condition": "approved_or_inbox"}
-]
+```
+ci_monitor → triage_agent                                  finding_discovered
+triage_agent → test_fixer | infra_fixer | dep_fixer        classified_<kind>
+specialist → evaluator                                     fix_drafted
+specialist → triage_agent                                  misrouted_bounce   ← ping-pong risk 1
+evaluator → specialist                                     rejected           ← ping-pong risk 2
+evaluator → ci_monitor                                     pass_merged_or_human_inbox
 ```
 
-The `reviewer → fixer` edge is the ping-pong (stall risk). `reviewer → triage` closes an item and returns control to pick the next; when the backlog is empty, triage runs the **post-run critique** and the loop terminates.
+14 edges total (full list in the spec JSON). The two bounce-back edges are where the planted stalls live; `evaluator → ci_monitor` closes an item.
 
 ## 6. Termination (`termination`)
 
 ```json
-{ "max_iterations": 30, "goal_check": "all_items_resolved_then_critique" }
+{ "max_iterations": 30, "goal_check": "finding resolved: evaluator PASS and fix merged, or routed to human inbox" }
 ```
 
-- `goal_reached` — every kept item ended in a PR/inbox **and** the post-run critique was written.
-- `stall_detected` — `STALL_WINDOW` (5) iterations with no state progress (the fixer↔reviewer bounce).
+- `goal_reached` — the incident ended in a merge or the human inbox.
+- `stall_detected` — `STALL_WINDOW` (5) iterations with no state progress (either ping-pong).
 - `max_iterations` / `timeout` — safety caps.
 
 ## 7. Seeds + answer key (`SandboxRun.seed_input`)
 
 ```json
 {
-  "backlog": [
-    { "id": "ci_1",  "type": "ci_failure", "summary": "test_auth_token fails: token TTL off by one", "blocks_release": true },
-    { "id": "iss_2", "type": "issue", "summary": "null deref in /profile when avatar missing", "blocks_release": false },
-    { "id": "cmt_3", "type": "commit", "summary": "refactor: rename settle() -> submit() (no behavior change)", "blocks_release": false }
-  ],
+  "failure_kind": "flaky_test",
+  "incident": "auth test flaky on retry",
   "answer_key": {
-    "ci_1":  { "must_pass": ["test_auth_token"], "must_not_touch": ["billing.py"], "priority": "high", "is_real_bug": true },
-    "iss_2": { "must_pass": ["test_profile_no_avatar"], "priority": "medium", "is_real_bug": true },
-    "cmt_3": { "expected_action": "skip", "reason": "no behavior change", "is_real_bug": false }
+    "true_kind": "flaky_test",
+    "must_pass": ["test_auth"],
+    "must_not_touch": ["billing.py"]
   }
 }
 ```
 
-- **`seed_strategy: "identical"`** → all sandboxes get the same backlog (measures divergence/consistency).
-- **`seed_strategy: "varied"`** → each sandbox gets a remix from the archetype library (measures robustness). ~10 archetypes → 100 backlogs.
-- `is_real_bug` powers the false-positive / self-assessment checks (§9).
+- **`seed_strategy: "identical"`** → all sandboxes get the same incident (measures divergence/consistency).
+- **`seed_strategy: "varied"`** → each sandbox gets an archetype remix (measures robustness).
+- `true_kind` powers the triage-accuracy check; `must_pass` powers the nod check (§9).
 
 ---
 
-## 8. Post-run critique — self-report event
+## 8. Planted failure scenarios (what guarantees the demo findings)
 
-At the end of each run the triage agent emits a structured critique (as a `state_update` event, `payload.kind = "post_run_critique"`):
+| # | Cluster | What happens | Paper failure class |
+|---|---|---|---|
+| 1 | **Misroute ping-pong** | triage calls a flaky test "infra"; infra_fixer bounces it back; triage (lacking the specialist's evidence) says "infra" again → stall | Tangled/handoff |
+| 2 | **Reject ping-pong** | dep_fixer resubmits the same rejected fix; evaluator rejects for the same uncovered edge case → stall | no-escape-hatch verification |
+| 3 | **Nodding evaluator** | oracle says the fix is broken (`must_pass_ok: false`); evaluator PASSes it anyway — run *looks* clean | Nodding loop |
 
-```json
-{
-  "kind": "post_run_critique",
-  "high_noise": ["cmt_3"],
-  "false_positives": [],                      // items the loop THINKS it wrongly flagged
-  "deprioritize": [],
-  "human_review_friction": "reviewer rejected ci_1 twice before approving",
-  "next_change": "add a currency-normalization pre-check before risk review"
-}
-```
-
-Loopy captures this and, crucially, **checks it against ground truth** (§9) — because a self-critique is the loop grading its own homework and can be wrong.
+All three are implemented in the fake seeder and verified caught by the analysis (see §9 numbers).
 
 ## 9. What Loopy tests on this loop
 
-### Tier 1 — automatic (any loop, zero config)
-| Check | On morning-triage it means |
+### Tier 1 — automatic (any loop, zero config) — IMPLEMENTED ✔
+| Check | On this loop it means |
 |---|---|
-| Completion rate | % of runs where all kept items reached a PR/inbox + critique written |
-| Stall / non-termination | fixer↔reviewer bounce hitting `STALL_WINDOW` |
-| Per-handoff fragility | e.g. `triage→fixer` dropping the `must_not_touch` constraint |
-| Cross-run divergence | identical backlog → different top-priority pick or different fix |
+| Completion rate | % of incidents that reached merge/inbox |
+| Stall / non-termination | either ping-pong hitting `STALL_WINDOW` |
+| Per-handoff fragility | 14 edges ranked; the guilty bounce edges top the list |
+| Cross-run divergence | identical incident → different routing or outcome |
 | Cost / iteration distribution | token spend + iteration count; the p95 tail |
-| Duplicate side-effects | two PRs "opened" for one item (re-plan) — ties to idempotency |
 
-### Tier 2 — user-defined correctness (via the answer key) — the money findings
+### Tier 2 — correctness vs the answer key — IMPLEMENTED ✔ — the money findings
 | Check | Caught because we have ground truth |
 |---|---|
-| **Nodding reviewer** | reviewer `approve`s a fix the oracle says fails `must_pass` → *approved-but-broken* |
-| **Self-assessment accuracy** | the **post-run critique's** self-reported false_positives / noise vs the oracle's actual counts (`is_real_bug`). If the loop says "0 false positives" but flagged a non-bug, that's a **blind spot** |
-| Scope violation | fix touches a `must_not_touch` file but is approved |
-| Wrong prioritization | acts on a low item while a `blocks_release` item waits, or skips something it shouldn't |
+| **Nodding evaluator** | evaluator PASSes a fix the oracle says fails `must_pass` → *approved-but-broken* |
+| **Triage accuracy** | first classification vs `true_kind`; the confusion pairs *prove* which agent owns the misroute stall |
+| Scope violation (next) | fix touches a `must_not_touch` file but is approved |
+
+Current verified numbers on the 80-sandbox fake run: completion 70%, stall 30%, fragility top-2 = the two planted bounce edges (100% / 70%), nod rate 3.6%, triage accuracy 87.5% with every miss = `flaky_test → infra`.
 
 ### Tier 3 — LLM-narrated "why"
 Gemini clusters flagged failures and explains the pattern. **Math decides, the LLM narrates.**
 
 ### A/B mode (a mode, not a new test)
-Run the identical battery with `reviewer_agent.model` = weak vs strong (or stricter prompt), fan out both fleets, diff the distributions:
-> "Strong reviewer cut the nod rate 9% → 1% and stalls 12% → 7%, at 1.8× tokens." — the paper's "tune the evaluator" advice, quantified.
+Run the identical battery with `evaluator.model` = weak vs strong (or stricter prompt), fan out both fleets, diff the distributions:
+> "Strong evaluator cut the nod rate and stalls, at higher token cost." — the paper's "tune the evaluator" advice, quantified.
 
 ---
 
 ## 10. Events this loop emits (`EventType`)
-- `agent_message` — triage→fixer handoff, fixer→reviewer submit, reviewer→fixer reject, reviewer→triage close.
-- `tool_call` / `tool_result` — `read_ci`, `run_tests`, `draft_fix`, `open_pr` (mock).
-- `state_update` — writes to the triage state file (Backboard memory) **and the post-run critique**.
+- `agent_message` — monitor→triage finding, triage→specialist handoff, specialist→evaluator submit, evaluator→specialist reject, specialist→triage bounce, evaluator→monitor close.
+- `tool_call` / `tool_result` — `read_ci_runs`, `worktree`, `run_tests` (oracle; result carries `must_pass_ok`).
+- `state_update` — writes to the state file (Backboard memory).
 - `loop_iteration` — each turn boundary.
 - `termination` — `goal_reached | stall_detected | max_iterations | timeout | error`.
 
@@ -217,8 +190,8 @@ Failures are **data**, not errors (only infra failures retry). Every event carri
 ## 11. How the sponsors show up (mind the two layers)
 
 **Layer 1 — inside THIS demo loop (the demo loop's choice; swappable, not required of a real user's loop):**
-- **Gemini** — powers the three agents (triage Flash-Lite; fixer/reviewer Flash).
-- **Backboard** — the loop's **persistence move**: the STATE.md memory (incl. the post-run critique) is Backboard memory scoped per `sandbox_id`; its router is the A/B knob for swapping the reviewer model.
+- **Gemini** — powers the six agents (monitor/triage Flash-Lite; fixers/evaluator Flash).
+- **Backboard** — the loop's **persistence move**: the state-file memory is Backboard memory scoped per `sandbox_id`; its router is the A/B knob for swapping the evaluator model.
 
 *(A real user's loop would bring its own models/memory — Loopy tests it model-agnostically. We use Gemini/Backboard here only because we authored the demo loop.)*
 
@@ -228,10 +201,10 @@ Failures are **data**, not errors (only infra failures retry). Every event carri
 - **MongoDB** — event store (time-series), change-stream live feed, within-batch vector clustering.
 - **Base44** — dashboard (fleet + traffic + report).
 
-**Unifold (optional, secondary loop):** morning-triage has no payments; register a small payments loop for the Unifold track, which also proves Loopy is domain-agnostic. Lead with morning-triage.
+**Unifold (optional, secondary loop):** this loop has no payments; register a small payments loop for the Unifold track, which also proves Loopy is domain-agnostic. Lead with the CI-triage loop.
 
 ---
 
-## 12. The demo money-moments (now two)
-1. **Nodding reviewer.** One run: triage → fix → reviewer approves → PR "opens." Looks perfect. Run it 100× → Loopy proves, against the answer key, that the reviewer nods a broken fix through **9%** of the time, clustered on multi-file changes; the A/B panel shows a stronger reviewer fixes it.
-2. **Dishonest self-critique.** The loop's own post-run critique reports it made few/no mistakes — but Loopy shows its self-reported false-positive rate is **4× lower than reality**. The loop that grades itself doesn't know how wrong it is. That's the whole thesis: self-assessment isn't QA; a ground-truthed distribution is.
+## 12. The demo money-moments
+1. **Nodding evaluator.** One run: triage → fix → evaluator approves → merged. Looks perfect. Run it 80× → Loopy proves, against the answer key, that the evaluator nods broken fixes through, clustered on multi-file changes; the A/B panel shows a stronger evaluator fixes it.
+2. **Misroute stall, attributed.** A third of runs never terminate — and Loopy doesn't just say "stalled": per-handoff fragility ranks the guilty edge #1 (`infra_fixer → triage_agent`, 100%), and triage accuracy proves *why* (every misclassification is `flaky_test → infra`). The paper predicted the failure class; Loopy measured it and named the agent responsible.
