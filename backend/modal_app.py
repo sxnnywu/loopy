@@ -99,6 +99,24 @@ def api():
     return fastapi_app
 
 
+@app.function(image=tribe_image, gpu="A100", volumes={CACHE_DIR: cache}, timeout=7200)
+def precompute_demo(subdir: str = "eval") -> dict:
+    """Score + render brain frames for the demo clips, saving full Score Objects
+    to /cache/precomputed/ for the bulletproof (no live GPU) demo path."""
+    import json
+    from pathlib import Path
+
+    from backend.scoring.precompute import precompute
+
+    folder = Path(CACHE_DIR) / "media" / subdir
+    clips = {p.stem: str(p) for p in sorted(folder.glob("*.mp4"))}
+    print(f"Precomputing {len(clips)} demo clips: {list(clips)}")
+    summary = precompute(clips, CACHE_DIR)
+    cache.commit()
+    print("PRECOMPUTE SUMMARY:\n" + json.dumps(summary, indent=2))
+    return summary
+
+
 @app.function(image=tribe_image, gpu="A100", volumes={CACHE_DIR: cache}, timeout=3600)
 def score_gpu(media_key: str) -> dict:
     """C calls this with a media_key; returns the Score Object (CONTRACTS.md §3)."""
