@@ -71,7 +71,7 @@ You do not own:
 
 ## Living Status (update every session)
 
-**Done:** —
+**Done (analysis half / Person C):** Tier-1 pipelines + Tier-2 answer-key checks in `backend/app/services/analysis/`; verified vs local Mongo with seeded fake run (80 sandboxes).
 **In progress:** —
-**Next:** Step 1 stubs
-**Handoff notes:** —
+**Next:** findings generator → report_builder → routes/reports.py; (capture half) Step 1 stubs still open.
+**Handoff notes:** pipelines take any pymongo-style db handle — swap in core/database.py when it lands. Runner must emit `classified` / `verdict` / `must_pass_ok` payload keys for Tier 2.

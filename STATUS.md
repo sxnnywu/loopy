@@ -2,7 +2,7 @@
 
 **Update this file at the end of every work session, by every person and every coding agent. Stale = bug.**
 
-Last updated: (initial scaffold)
+Last updated: 2026-07-17 (Jay / Person C session)
 
 ---
 
@@ -10,10 +10,13 @@ Last updated: (initial scaffold)
 
 - [x] Documentation scaffold created (all root MD files + workstream plans)
 - [x] Draft shared contracts (event schema, collections, routes) — DRAFT status, not locked
+- [x] Person C: Tier-1 deterministic pipelines (completion, stall, iterations, cost, divergence, per-handoff fragility) — verified vs local Mongo
+- [x] Person C: Tier-2 answer-key checks (nod rate, triage accuracy) — verified
+- [x] Person C: fake-data seeder w/ 3 planted failure clusters + 6-agent CI-triage LoopSpec (`backend/`)
 
 ## In Progress
 
-- (nothing — build has not started)
+- Person C (analysis): findings generator → report_builder → /report route (next)
 
 ## Next
 
@@ -42,3 +45,8 @@ Gotchas for the next person:
 What changed: full doc structure created; contracts in DRAFT.
 Decisions made: workstream-based division (not name-based); push-model event capture assumed; `run_id` naming locked.
 Gotchas: sandbox substrate is THE open decision — nothing in Orchestration should hard-commit until it's made.
+
+### 2026-07-17 evening — Jay (Person C) + Claude
+What changed: backend/ added — analysis pipelines (Tier 1+2), CI-triage demo spec, fake seeder; PERSON_C_PLAN.md + DEMO_TARGET_CI_TRIAGE.md at root.
+Decisions made: Jay prefers the 6-AGENT CI-triage loop as demo target — CONFLICTS with example-loops/morning-triage.md ("the one loop"). NEEDS TEAM ALIGNMENT before A builds the runner.
+Gotchas for the next person: analysis needs runner to emit payload keys `classified`, `verdict`, `must_pass_ok` (see PERSON_C_PLAN.md §6); C uses a local models.py mirror until A commits the shared module.
