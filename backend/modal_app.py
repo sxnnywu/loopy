@@ -1,42 +1,64 @@
-"""Modal app for Reeled In — Person B (scoring engine).
+"""Modal app: serves the FastAPI ASGI app (CPU, scale-to-zero) + hosts the TRIBE GPU fn.
+Owner: C wires the app; B fills score_gpu (+ B's smoke/load/score verification fns).
 
-Functions:
-  smoke_test  — Phase 0: confirm an A100 boots and CUDA is visible.
-  load_test   — Phase 1a: build the TRIBE image and load the checkpoint on A100
-                (text encoder overridden to the ungated unsloth Llama mirror).
-
-Run:
+Run (B verification):
   python3 -m modal run backend/modal_app.py::smoke_test
   python3 -m modal run backend/modal_app.py::load_test
+  python3 -m modal run backend/modal_app.py::score_test
 """
-
 import modal
 
-app = modal.App("reeled-in-scoring")
+app = modal.App("reeled-in")
 
-# Persistent cache for HF weights + TRIBE checkpoint so cold starts don't
-# re-download ~20GB of encoders.
+# Persistent cache for HF weights + TRIBE checkpoint (and variant media under
+# /cache/media) so GPU cold starts don't re-download ~20GB of encoders.
 cache = modal.Volume.from_name("reeled-in-cache", create_if_missing=True)
 CACHE_DIR = "/cache"
 
-# --- Minimal image for the Phase 0 GPU smoke test ---
-smoke_image = modal.Image.debian_slim(python_version="3.11").pip_install("torch")
+# Light image for the FastAPI ASGI app (C's api()).
+image = (
+    modal.Image.debian_slim()
+    .pip_install_from_requirements("backend/requirements.txt")
+    .add_local_python_source("backend")
+)
 
-# --- Full TRIBE image: torch pinned <2.7 per tribev2 pyproject, installed from git ---
+# Heavy image for TRIBE scoring: torch pinned <2.7 per tribev2 pyproject,
+# installed from git; clone to /opt so it can't shadow the installed package.
 tribe_image = (
     modal.Image.debian_slim(python_version="3.11")
     .apt_install("git", "ffmpeg")
     .pip_install("torch>=2.5.1,<2.7", "torchvision>=0.20,<0.22")
     .run_commands(
-        # Clone outside /root: the container cwd is /root, so a /root/tribev2
-        # dir would shadow the installed package as an empty namespace package.
         "git clone --depth 1 https://github.com/facebookresearch/tribev2 /opt/tribev2-src",
         "pip install -e /opt/tribev2-src",
         "python -m spacy download en_core_web_sm",
     )
     .env({"HF_HOME": f"{CACHE_DIR}/hf"})
-    .add_local_python_source("scoring")
+    .add_local_python_source("backend")
 )
+
+
+@app.function(image=image)
+@modal.asgi_app()
+def api():
+    from backend.main import app as fastapi_app
+
+    return fastapi_app
+
+
+@app.function(image=tribe_image, gpu="A100", volumes={CACHE_DIR: cache}, timeout=3600)
+def score_gpu(media_key: str) -> dict:
+    """C calls this with a media_key; returns the Score Object (CONTRACTS.md §3)."""
+    from backend.scoring.score import score
+
+    result = score(media_key)
+    cache.commit()
+    return result
+
+
+# --- B verification functions ---
+
+smoke_image = modal.Image.debian_slim(python_version="3.11").pip_install("torch")
 
 
 @app.function(gpu="A100", image=smoke_image, timeout=600)
@@ -55,44 +77,39 @@ def smoke_test() -> dict:
 @app.function(gpu="A100", image=tribe_image, volumes={CACHE_DIR: cache}, timeout=3600)
 def load_test() -> dict:
     import torch
-    from scoring.tribe_model import load_tribe
+    from backend.scoring.tribe_model import load_model
 
-    model = load_tribe(CACHE_DIR)
-    cache.commit()  # persist downloaded weights to the volume
-
-    n_params = sum(p.numel() for p in model.parameters()) if hasattr(model, "parameters") else None
-    info = {
-        "loaded": True,
-        "device": "cuda" if torch.cuda.is_available() else "cpu",
-        "n_params": n_params,
-    }
+    load_model(CACHE_DIR)
+    cache.commit()
+    info = {"loaded": True, "device": "cuda" if torch.cuda.is_available() else "cpu"}
     print("TRIBE load test:", info)
     return info
 
 
 @app.function(gpu="A100", image=tribe_image, volumes={CACHE_DIR: cache}, timeout=3600)
 def score_test() -> dict:
-    """Phase 1b: generate a synthetic clip, score it end-to-end, return the
-    Score Object. Proves the full video -> ScoreObject path with no external
-    assets (D's real demo clips come in Phase 2)."""
+    """Generate a synthetic clip, score it end-to-end via score(media_key)."""
     import json
     import subprocess
+    from pathlib import Path
 
-    from scoring.score import score
+    from backend.scoring.score import score
 
-    clip = "/tmp/test_clip.mp4"
+    media_dir = Path(CACHE_DIR) / "media"
+    media_dir.mkdir(parents=True, exist_ok=True)
+    clip = media_dir / "var_synthetictest.mp4"
     subprocess.run(
         [
             "ffmpeg", "-y",
             "-f", "lavfi", "-i", "testsrc=duration=20:size=320x240:rate=25",
             "-f", "lavfi", "-i", "sine=frequency=440:duration=20",
-            "-shortest", "-pix_fmt", "yuv420p", clip,
+            "-shortest", "-pix_fmt", "yuv420p", str(clip),
         ],
         check=True,
         capture_output=True,
     )
 
-    result = score(clip, CACHE_DIR, variant_id="var_synthetictest")
+    result = score("media/var_synthetictest.mp4")
     cache.commit()
     print("Score Object:\n" + json.dumps(result, indent=2)[:2000])
     return result

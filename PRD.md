@@ -14,7 +14,7 @@ Short-form video has too many creative variables and no cheap pre-publish signal
 - **Agencies / social teams** — a fast pre-flight check across many variants.
 
 ## Goals
-- Given >=2 variants, produce a clear, explainable **winner** with a per-network engagement breakdown and an engagement-over-time curve.
+- Given >=2 variants, produce a clear, explainable **winner** with all 5 network curves plus the composite engagement curve over time.
 - Make the signal **fast and pre-publish** (seconds, no humans).
 - Personalize over time (learn what works for a given creator).
 
@@ -34,12 +34,13 @@ Short-form video has too many creative variables and no cheap pre-publish signal
 - **Upload & compare** test type (2+ finished variants).
 - **Voice A/B** test type (script -> ElevenLabs reads -> overlay -> score).
 - **Scoring engine:** TRIBE -> 5 networks -> peak / sustained / retention-to-CTA metrics.
-- **Results screen:** winner call, per-network bars, engagement-over-time curve, plain-English summary (Backboard).
+- **Results screen:** winner call, all 5 network curves + the composite engagement curve over time (per-network summary bars optional), plain-English summary (Backboard).
+- **Brain animation:** side-by-side video + a per-second brain-frame flipbook lighting up the engaged regions, with an **AI explainer** captioning what each moment means ("your brain is locking onto a face — good hook").
 - **Login + history** (Base44 auth, Mongo store), Backboard memory for personalized tips.
 
 **Stretch**
 - Video-editing auto-generation (music swap -> reorder -> pacing).
-- 3D brain visualization synced to the video.
+- Live **interactive 3D** brain (rotatable, rendered in-browser) instead of the precomputed flipbook.
 - "Act on the winner" (schedule/post) — deliberately deferred (the Phoebe-shaped scope creep we're avoiding).
 
 ## What "winner" means (metric definition)
@@ -60,8 +61,8 @@ In: scoring, comparison, results, voice variants, history/memory. Out: video edi
 - **Out-of-distribution short-form** -> directional; lead with segment-level insight.
 
 ## Open questions
-- Auth0 vs Base44 native login.
-- Direct Gemini call vs Backboard-only.
+- Auth: DECIDED — Base44 native login (no Auth0).
+- Gemini: DECIDED — direct call for suggestions (Backboard owns RAG/memory + explainer).
 - 3D brain viz vs charts-only.
 - Video-editing auto-gen stretch (and first variable).
-- Team size / roles.
+- Team: A=Kimi, B=Jay, C=Seb, D=Sunny.

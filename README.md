@@ -61,7 +61,7 @@ Why two "backends": Base44 can't run heavy ML Python or reliably reach Atlas fro
 - **ElevenLabs** — powers the Voice A/B test type.
 - **MongoDB Atlas** — system of record.
 - **Backboard** — LLM + memory/RAG layer.
-- *Optional, decide by time:* Auth0 (vs Base44 native login), one direct Gemini call (MLH prize).
+- *Locked:* a direct Gemini call powers suggestions (MLH prize); Backboard owns RAG/memory + explainer. Auth0 dropped — Base44 native login.
 - **Out:** Phoebe — analysis tool, not real-world coordination; forcing it in is scope creep.
 
 ## Team (4) — build split
@@ -73,7 +73,7 @@ Four parallel lanes, two frozen contracts (the **API contract** and the **Score 
 | **A — Frontend & Design** (Base44) | Whole Base44 app: upload, voice-script form, results/winner screen, history, login, design system, pitch visuals | Consumes the API response JSON (mock first) |
 | **B — Scoring Engine** (TRIBE on Modal) | TRIBE v2 on A100, 5-network reduction, metrics, Score Object, precomputed demo scores | `score(media) -> ScoreObject` |
 | **C — Backend & Data** (FastAPI + MongoDB) | All endpoints, Mongo schema + pymongo, auth verification, orchestration — the integration hub | Defines the REST contract; calls B and D |
-| **D — Generation & Intelligence** (ElevenLabs + ffmpeg + Backboard) | Voice-A/B pipeline, Backboard LLM/memory, optional Gemini, demo dataset curation | `generate_voice_variants(...)`, `suggest(...)`, `tips(...)` |
+| **D — Generation & Intelligence** (ElevenLabs + ffmpeg + Backboard) | Voice-A/B pipeline, Backboard LLM/memory, direct Gemini (suggestions), demo dataset curation | `generate_voice_variants(...)`, `suggest(...)`, `tips(...)` |
 
 ```
 A (UI)        -- calls --> C (API)
@@ -114,8 +114,8 @@ Full phase plan, repo layout with per-file owners, and the cross-person dependen
 
 ## Open decisions
 
-- Auth0 vs Base44 native login
-- Direct Gemini call vs Backboard-only LLM layer
+- Auth: DECIDED — Base44 native login (no Auth0)
+- Gemini: DECIDED — direct call for suggestions (Backboard owns RAG/memory + explainer)
 - 3D brain viz vs charts-only results screen
 - Video-editing auto-gen (stretch; music swap first if attempted)
 - Final team split (see table above)

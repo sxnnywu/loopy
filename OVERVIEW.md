@@ -13,7 +13,7 @@ Reeled In is a **neural A/B testing tool for short-form video**. Upload two or m
 Short-form video has a huge number of creative variables — hook, music, loudness, clip choice, clip order, pacing / cut frequency, on-screen text, CTA. Creators and brands *guess* which combination works and only find out after posting, or after burning ad spend. Real testing today means posting variants live, or expensive human focus groups / eye-tracking. There is no fast, cheap, pre-publish signal for "which edit actually holds attention."
 
 ## Our approach
-Feed each variant into TRIBE v2 (predicts fMRI brain responses to video / audio / text). Reduce the predicted whole-brain response to **five interpretable functional networks** — visual, auditory, language, motion, and default-mode (meaning / engagement) — as a signal over time. Compare variants on **sustained engagement and retention through the CTA**, and surface a winner with a per-network breakdown and an engagement-over-time curve.
+Feed each variant into TRIBE v2 (predicts fMRI brain responses to video / audio / text). Reduce the predicted whole-brain response to **five interpretable functional networks** — visual, auditory, language, motion, and default-mode (meaning / engagement) — as a signal over time. Compare variants on **sustained engagement and retention through the CTA**, and surface a winner with all 5 network curves plus the composite engagement curve over time. Alongside the winner, a **side-by-side brain animation** plays the reel next to a per-second flipbook of the brain lighting up, with an AI explainer narrating what each engaged region means.
 
 **Honesty line (also our pitch strength):** TRIBE predicts *neural activation*, not emotion or purchase intent. We sell a fast, directional, **pre-flight engagement screen** — not ground truth.
 
@@ -32,7 +32,7 @@ Feed each variant into TRIBE v2 (predicts fMRI brain responses to video / audio 
 
 **Out: Phoebe** — Reeled In is an analysis tool, not real-world coordination; forcing it in = scope creep.
 
-**Minor / optional (decide by time):** **Auth0** (vs Base44 native login), a direct **Gemini** call (for the MLH Gemini prize, if not subsumed by Backboard).
+**Also locked:** a direct **Gemini** API call powers the hook/copy suggestions (claims the MLH Gemini prize); **Backboard** owns RAG/memory + the explainer. (Auth0 dropped — Base44 native login.)
 
 ## Honesty / caveats (put these in the pitch — they signal we know the science)
 - **Activation ≠ outcome.** A region lighting up ≠ "this ad sells." We present a neural *engagement signal*, a proxy.
@@ -48,11 +48,11 @@ Feed each variant into TRIBE v2 (predicts fMRI brain responses to video / audio 
 - One HT6 track only (Hardware / Environmental / Beginner) + unlimited sponsor + MLH tracks.
 
 ## Open decisions
-- **Auth:** Base44 native login (default, simplest) vs wire **Auth0** for the extra prize.
-- **Gemini:** keep one direct Gemini call for the MLH prize, or let Backboard be the whole LLM layer.
+- **Auth:** DECIDED — Base44 native login (Auth0 dropped).
+- **Gemini:** DECIDED — direct Gemini call for hook/copy suggestions (Backboard owns RAG/memory + the explainer).
 - **3D brain viz** vs charts-only for the results screen.
 - **Video-editing auto-gen** (reorder / pace / music) — stretch only; music swap easiest first.
-- **Team size / who builds what** — still needed for a task-division plan.
+- **Team:** DECIDED — A=Kimi (frontend), B=Jay (scoring), C=Seb (backend), D=Sunny (generation).
 
 ## Related docs
 - `HOW_TRIBE_V2_WORKS.md` — model deep-dive.

@@ -1,7 +1,7 @@
 # Reeled In — Parallel Implementation Plan
 
 Last updated: 2026-07-18. Companion to `TEAM_DIVISION.md`, `TECH_ARCHITECTURE.md`, `PRD.md`.
-People: **A** = Frontend & Design (Base44) · **B** = Scoring Engine (TRIBE/Modal) · **C** = Backend & Data (FastAPI/Mongo) · **D** = Generation & Intelligence (ElevenLabs/ffmpeg/Backboard).
+People: **A (Kimi)** = Frontend & Design (Base44) · **B (Jay)** = Scoring Engine (TRIBE/Modal) · **C (Seb)** = Backend & Data (FastAPI/Mongo) · **D (Sunny)** = Generation & Intelligence (ElevenLabs/ffmpeg/Backboard).
 
 ## How to read this
 Work is grouped into **phases** (logical stages, not fixed clock hours). Each task is tagged:
@@ -35,13 +35,16 @@ reeled-in/
 │  │  ├─ networks.py            reduce ~20k vertices -> 5 networks
 │  │  ├─ metrics.py             peak / sustained / retention -> metrics
 │  │  ├─ score.py               score(media) -> ScoreObject  (the public entrypoint)
-│  │  └─ precompute.py          batch-score the demo variants
+│  │  ├─ brain_render.py        render per-second brain PNGs (nilearn) -> brain_frames
+│  │  ├─ regions.py             vertices -> top region/network -> region_timeline
+│  │  └─ precompute.py          batch-score + render the demo variants
 │  ├─ generation/              [D]
 │  │  ├─ voice.py               ElevenLabs reads
 │  │  ├─ overlay.py             ffmpeg audio mux onto base video
 │  │  ├─ variants.py            generate_voice_variants(base, script) -> [videos]
 │  │  ├─ llm.py                 Backboard suggestions + memory/RAG
-│  │  └─ gemini.py              optional direct Gemini call
+│  │  ├─ explainer.py           region_timeline -> per-second captions (Backboard)
+│  │  └─ gemini.py              direct Gemini call — hook/copy suggestions
 │  └─ mocks/
 │     ├─ mock_score.py          [C]  canned ScoreObject (matches CONTRACTS)
 │     └─ mock_variants.py       [D]  canned variant list
@@ -65,20 +68,20 @@ Nothing real starts until this is done. Do it synchronously in the first ~hour.
 
 ## Phase 1 — Build against mocks  [maximum parallelism · all four independent]
 This is the big parallel window. No one waits on anyone (only on Phase 0).
-- **A [PARALLEL]:** `frontend/mock_api.json` (canned Score Object from CONTRACTS) → build **Upload screen**, **Voice-A/B form**, **Results screen** (per-network bars + engagement curve) wired to the mock. Needs only CONTRACTS.
+- **A [PARALLEL]:** `frontend/mock_api.json` (canned Score Object from CONTRACTS) → build **Upload screen**, **Voice-A/B form**, **Results screen** (all 5 network curves + composite engagement curve) wired to the mock. Needs only CONTRACTS.
 - **B [PARALLEL]:** `scoring/tribe_model.py` + a first `scoring/score.py` that returns a **real ScoreObject for one stock clip** (metrics can be rough). Needs only CONTRACTS (to match output shape). Depends on nobody.
 - **C [PARALLEL]:** `models/schemas.py` (Pydantic from CONTRACTS), `db/mongo.py`, `mocks/mock_score.py`, and all `api/routes_*` wired to **stubs** → the full API runs end-to-end on fake data. Needs only CONTRACTS.
 - **D [PARALLEL]:** `generation/voice.py` (ElevenLabs) + `generation/overlay.py` (ffmpeg) → produce 2–3 real **voice-variant files** from a stock clip; `mocks/mock_variants.py`. Needs only a stock clip.
 - **Exit:** A has a clickable UI on mock data; B scores one clip for real; C's API serves fake data end-to-end; D produces real voice variants.
 
 ## Phase 2 — Complete the real pipelines  [mostly parallel · first join points]
-- **B [PARALLEL → one join]:** `scoring/networks.py` (20k → 5), `scoring/metrics.py` (peak/sustained/retention), finalize `score.py`; then `scoring/precompute.py`.
+- **B [PARALLEL → one join]:** `scoring/networks.py` (20k → 5), `scoring/metrics.py` (peak/sustained/retention), finalize `score.py`, plus `scoring/brain_render.py` (per-second brain PNGs) and `scoring/regions.py` (region_timeline); then `scoring/precompute.py` (scores + brain frames).
   - **[WAITS ON D]** precomputing the *demo* variants needs D's demo dataset. **Mitigation:** B precomputes on stock clips first; D delivers the demo dataset by end of Phase 1 / start of Phase 2 so B is never blocked late.
 - **C [PARALLEL]:** real `db/mongo.py` persistence (write/read tests, variants, scores), `routes_history.py`, auth-token verification. Still calling stubs for score/generate.
-- **D [PARALLEL]:** `generation/variants.py` (finalize `generate_voice_variants`), `generation/llm.py` (Backboard suggestions + memory/RAG).
+- **D [PARALLEL]:** `generation/variants.py` (finalize `generate_voice_variants`), `generation/llm.py` (Backboard suggestions + memory/RAG), `generation/explainer.py` (region_timeline → per-second captions).
   - **[SOFT dep on C]** Backboard RAG reads a creator's history; use a **mock history JSON** (shape from CONTRACTS) until integration.
   - **Deliverable → B:** the **demo dataset** (this is the key early hand-off; deliver it as soon as possible).
-- **A [PARALLEL]:** history view, winner-reveal, design polish — all still on the mock.
+- **A [PARALLEL]:** the side-by-side brain-flipbook player (against mock brain_frames + region_timeline), history view, winner-reveal, design polish — all still on the mock.
 - **Exit:** real `score()`, real API+DB, real generators — all still independent via mocks/mock-history.
 
 ## Phase 3 — Integration  [the sequential join · do in this order]
@@ -108,6 +111,8 @@ The only part with hard waits. Kept short because every stub already matches CON
 | 8 | B precompute + D dataset + C Mongo | seed_demo (demo path) | HARD | P3/4 | sequence at integration |
 | 9 | C: Mongo history shape | D's Backboard RAG | SOFT (shape in CONTRACTS) | P2 | D uses mock history |
 | 10 | A: token format | C token verification | SOFT (in CONTRACTS) | P2 | agree in P0 |
+| 11 | B: region_timeline (data) | D's explainer captions | SOFT (shape in CONTRACTS) | P2 | D uses mock region_timeline |
+| 12 | B: brain_frames + region_timeline | A's brain-flipbook player | via API (HARD at integration) | P3 | A uses mock frames until then |
 
 ## Critical path & parallelism summary
 - **Critical path:** CONTRACTS (P0) → **B's TRIBE `score()`** (P1–P2, the riskiest/longest task) → C integration (P3) → seed + demo (P4). **B is the long pole** — keep them unblocked; they need nobody except CONTRACTS, LLaMA access, and a clip.
