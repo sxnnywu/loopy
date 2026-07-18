@@ -75,6 +75,27 @@ signals run on a separate CPU image (`objective_image`).
    engaging" is unvalidated — don't wire them into the score without labelled data.
 5. `face.py` mouth-open reads 0 (frame sampling too slow for fast speech) — minor, fix by sampling faster.
 
+## For C — serving media to the frontend (needed, C's lane)
+Brain images + video live on the Modal Volume `reeled-in-cache` under
+`/media/<file>`. Score Objects reference them by `media_key` = `media/<file>.png`.
+A can't load them until C exposes an HTTP route that streams a media_key from the
+volume, e.g.:
+```
+GET /api/media/{key}   ->  streams  /cache/media/{key}   (image/png or video/mp4)
+```
+Then A's brain frame src = `${API_BASE}/media/${brain_frames[i]}`. Precomputed
+Score Objects are at `/cache/precomputed/<vid>.json` for the no-GPU demo path.
+
+## Brain-frame smoothness (for A)
+TRIBE is **1 Hz** — one real brain state per second, so `brain_frames` is one
+image per second, aligned 1:1 with the network arrays (CONTRACTS §3).
+- **Recommended:** A cross-fades between consecutive frames (CSS/opacity tween)
+  for a smooth flipbook — no fake data, no contract change.
+- `render_frames(..., sub=2)` can emit interpolated half-second frames if we
+  really want them pre-rendered, but the in-betweens are blended (not new
+  measurements) and it desyncs frame count from the 1 Hz data. Only do this with
+  a CONTRACTS note. Default stays sub=1.
+
 ## Open items (Person B)
 - Build `brain_render.py` (brain_frames) and `precompute.py` (demo path, needs D's clips).
 - Resolve the normalization decision with the team (item 1 above).
