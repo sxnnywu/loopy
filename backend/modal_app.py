@@ -43,7 +43,7 @@ tribe_image = (
 # MediaPipe face expression, Whisper transcript.
 objective_image = (
     modal.Image.debian_slim(python_version="3.11")
-    .apt_install("ffmpeg", "libgl1", "libglib2.0-0")
+    .apt_install("ffmpeg", "libgl1", "libglib2.0-0", "libgles2", "libegl1", "libgl1-mesa-dri")
     .pip_install(
         "numpy", "opencv-python-headless", "ultralytics", "mediapipe", "openai-whisper"
     )
