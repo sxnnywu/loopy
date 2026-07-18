@@ -70,6 +70,34 @@ def load_test() -> dict:
     return info
 
 
+@app.function(gpu="A100", image=tribe_image, volumes={CACHE_DIR: cache}, timeout=3600)
+def score_test() -> dict:
+    """Phase 1b: generate a synthetic clip, score it end-to-end, return the
+    Score Object. Proves the full video -> ScoreObject path with no external
+    assets (D's real demo clips come in Phase 2)."""
+    import json
+    import subprocess
+
+    from scoring.score import score
+
+    clip = "/tmp/test_clip.mp4"
+    subprocess.run(
+        [
+            "ffmpeg", "-y",
+            "-f", "lavfi", "-i", "testsrc=duration=20:size=320x240:rate=25",
+            "-f", "lavfi", "-i", "sine=frequency=440:duration=20",
+            "-shortest", "-pix_fmt", "yuv420p", clip,
+        ],
+        check=True,
+        capture_output=True,
+    )
+
+    result = score(clip, CACHE_DIR, variant_id="var_synthetictest")
+    cache.commit()
+    print("Score Object:\n" + json.dumps(result, indent=2)[:2000])
+    return result
+
+
 @app.local_entrypoint()
 def main():
     result = smoke_test.remote()
