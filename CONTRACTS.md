@@ -102,21 +102,38 @@ Base path `API_BASE = /api`. All bodies + responses are JSON, snake_case. All au
 |---|---|---|---|
 | POST | `/api/tests` | `{ type, objective? }` | `Test` |
 | POST | `/api/tests/{test_id}/variants` | multipart: `file`, `label`, `params?` | `Variant` |
+| POST | `/api/tests/{test_id}/base-media` | multipart: `file` | `{ media_key }` |
 | POST | `/api/tests/{test_id}/voice-variants` | `{ base_media_key, script, voices? }` | `{ variants: [Variant] }` |
 | POST | `/api/tests/{test_id}/score` | — | `Test` (with `status`, `winner_variant_id`) |
 | GET  | `/api/tests/{test_id}` | — | `{ test: Test, variants: [Variant], scores: [ScoreObject] }` |
-| GET  | `/api/history` | — | `{ tests: [Test] }` |
+| GET  | `/api/history` | — | `{ tests: [TestSummary] }` |
 | POST | `/api/suggest` (opt) | `{ context }` | `{ suggestions: [string] }` |
 | GET  | `/api/tests/{test_id}/tips` (opt) | — | `{ tips: string }` |
 | POST | `/api/tests/{test_id}/explain` | — | `{ explanations: { "<variant_id>": [ { "t": int, "text": string } ] } }` |
 
 - `Test`, `Variant`, `ScoreObject` are exactly the shapes in §3–§4.
 - The winner is decided by the test's `objective`; the backend sets `winner_variant_id` at score time.
+- **Base media (Voice A/B):** `POST /base-media` uploads the base video once → `{ media_key }`; pass it as `base_media_key` to `/voice-variants`. Upload-mode variants still POST their file straight to `/variants`.
+- **Scoring is async (async request-reply pattern):** `POST /score` returns immediately with the Test's current `status` (`scoring`, or `complete` when precomputed). **A polls `GET /tests/{test_id}` every ~1.5 s until `status` ∈ {`complete`, `failed`}** (client timeout ~60 s). Winner + scores are present once `complete`.
+- **`TestSummary`** — the lightweight per-test shape `/history` returns (avoids N+1 fetches):
+  ```json
+  { "test_id": "test_...", "type": "upload", "objective": "retention",
+    "status": "complete", "created_at": "...", "variant_count": 2,
+    "winner": { "variant_id": "var_...", "label": "B" } }
+  ```
+  `winner` is `null` until a winner exists.
 
 ## 6. Auth
-- Every request carries `Authorization: Bearer <token>` (Base44 issues it at login).
-- The backend (C) resolves the token → `user_id` (`usr_...`) and, on first login, upserts a `users` doc.
-- The contract we rely on: an authed request always yields a stable `user_id`. We adapt to Base44's actual token format; nothing else in the app parses the token.
+**Free-plan model (locked 2026-07-18, research-backed). Identity does NOT come from Base44's login.** Verified against Base44's own docs: the SDK exposes no way to read the user's token, `createClientFromRequest` (its token-verification helper) is Base44-backend-function-only (= Builder plan), and custom OAuth is Base44-brokered — so **an external server (C) cannot verify a Base44 user on the free plan.** Instead:
+
+1. **Base44 app = Public** — no forced Base44 login gate (confirmed supported on free).
+2. **IdP runs client-side in the app — Auth0 (LOCKED; also wins the MLH Auth0 prize).** The Auth0 SPA SDK (PKCE) needs no client secret and no backend function, so it works on free. Auth0 issues a **JWT straight to the browser** — this bypasses Base44 auth entirely (the token is from Auth0, not Base44). *(Google Identity Services is a drop-in alternative if ever needed; Auth0 is the chosen path.)*
+3. **Every request carries `Authorization: Bearer <auth0_jwt>`.** C **verifies it statelessly against Auth0's public JWKS** (`AUTH0_DOMAIN`), reads `sub` + `email`, upserts a `users` doc on first sight → stable `user_id` (`usr_...`). No `POST /api/auth` exchange needed.
+4. **Origin lock — CORS:** C allows ONLY the origins in `ALLOWED_ORIGINS` (§8). Layer 3 proves *who*; layer 4 limits *from where*.
+
+- Only C parses the JWT; A just forwards it. An authed request always yields a stable `user_id`.
+- **Guaranteed fallback (the floor — auth can never sink the project):** if the client-side IdP is ever blocked, C mints its **own** signed session JWT (anonymous per-browser, or email+code) — zero external dependency, fully in C's control. Trade-off: per-browser history instead of cross-device accounts. Keep ready as plan B.
+- **[CONFIRM at event · low risk]** that a Public Base44 app page can load the Auth0 SPA SDK / popup (CSP). Use Auth0 popup mode to sidestep redirect issues inside Base44 hosting.
 
 ## 7. Media & storage
 - Video files are referenced by an opaque **`media_key`** string, format `media/<variant_id>.mp4`.
@@ -132,9 +149,12 @@ BACKBOARD_API_KEY
 GEMINI_API_KEY         # optional
 MODAL_TOKEN_ID
 MODAL_TOKEN_SECRET
-BACKEND_API_KEY        # shared secret Base44's courier uses to call our API
+ALLOWED_ORIGINS        # comma-separated Base44 app origin(s) C allows via CORS (e.g. https://<app>.base44.app)
+AUTH0_DOMAIN           # C verifies IdP JWTs against this domain's JWKS
+AUTH0_AUDIENCE         # expected `aud` claim on the JWT
+# BACKEND_API_KEY      — REMOVED for the free-plan build (no server-side courier; Builder-plan-only). See §6.
 ```
-Real values live in `.env` (gitignored) / Modal & Base44 secret stores. Never commit secrets.
+Real values live in `.env` (gitignored) / Modal & Base44 secret stores. Never commit secrets. The frontend's Auth0 config (`domain` / `clientId` / `audience`) is **public** — it lives in the Base44 app config, not in the secret store.
 
 ## 9. Error format
 Non-2xx responses return:
@@ -147,3 +167,6 @@ Common codes: `bad_request`, `unauthorized`, `not_found`, `scoring_failed`, `int
 - 2026-07-18 — initial contract drafted (A/B/C/D to ratify in Phase 0 before freezing).
 - 2026-07-18 — brain-animation feature: Score Object gains `brain_frames` + `region_timeline`; added region vocabulary (§2) and `POST /explain` (§5).
 - 2026-07-18 — display: added `engagement` composite curve to the Score Object (§3); results screen now shows all 5 network curves + the composite curve.
+- 2026-07-18 — §6 + §8 reworked for the **free-plan / courier-less** model: frontend calls the API directly from the browser; removed `BACKEND_API_KEY` (Base44 backend functions are Builder-plan-only).
+- 2026-07-18 — **Auth resolved (research-backed) — OVERRIDES the earlier "Base44 native login (Auth0 dropped)" lock.** Base44 native login is NOT externally verifiable on the free plan (SDK exposes no token accessor; `createClientFromRequest` is backend-function/Builder-only; custom OAuth is Base44-brokered) — it would have broken A↔C integration. New model: **Base44 app = Public**, **Auth0 (LOCKED)** client-side SPA SDK issues a JWT, C verifies per-request via Auth0's JWKS, CORS locks origin; **guaranteed fallback** = C-minted session JWT. Auth0 also wins the MLH Auth0 prize. Added `AUTH0_DOMAIN` / `AUTH0_AUDIENCE` (§8); OVERVIEW / TECH_ARCHITECTURE / TEAM_DIVISION auth notes updated to match.
+- 2026-07-18 — §5: added `POST /tests/{id}/base-media` (Voice-A/B base upload → `media_key`); defined `POST /score` as async + `GET /tests/{id}` polling; `/history` now returns enriched `TestSummary` (no N+1).

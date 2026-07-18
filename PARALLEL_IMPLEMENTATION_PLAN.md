@@ -62,15 +62,16 @@ Nothing real starts until this is done. Do it synchronously in the first ~hour.
 - **C:** create the repo skeleton (dirs above), `requirements.txt`, `.env.example`, empty `main.py` + `models/schemas.py`.
 - **C:** provision **MongoDB Atlas** cluster; put the connection string in the shared secret store.
 - **B:** create the **Modal** app; **accept the HuggingFace LLaMA-3.2 gated license now** (do this hour 1 — it's a hard prerequisite for any text/video run); smoke-test that an A100 boots.
-- **A:** create the **Base44** project; scaffold empty screens.
+- **A:** create the **Base44** project (set visibility to **Public** — no forced Base44 login); scaffold empty screens.
+- **A + C:** create the **Auth0** app (LOCKED — also wins the MLH Auth0 prize), register the Base44 app URL as an allowed origin/callback, put `AUTH0_DOMAIN` / `AUTH0_AUDIENCE` in the shared secret store. This is the auth backbone — Base44 native login can't be verified by C on the free plan (see CONTRACTS §6). Client-side SPA SDK only; no backend function needed.
 - **D:** grab 1–2 base **stock clips**; get **ElevenLabs** + **Backboard** API keys. ✅ DONE — 2 placeholder clips in `demo/dataset/` (test-videos.co.uk; swap for real short-form footage in P2); ElevenLabs + Backboard + Gemini keys in local `.env`s, all verified with live calls. Gemini: use `gemini-2.5-flash-lite` (2.0-flash free quota 429s). Backboard API: `https://app.backboard.io/api`, `X-API-Key` header, `POST /threads/messages` auto-creates thread+assistant.
 - **Exit:** CONTRACTS.md frozen + committed, scaffold pushed → unlock Phase 1.
 
 ## Phase 1 — Build against mocks  [maximum parallelism · all four independent]
 This is the big parallel window. No one waits on anyone (only on Phase 0).
-- **A [PARALLEL]:** `frontend/mock_api.json` (canned Score Object from CONTRACTS) → build **Upload screen**, **Voice-A/B form**, **Results screen** (all 5 network curves + composite engagement curve) wired to the mock. Needs only CONTRACTS.
+- **A [PARALLEL]:** `frontend/mock_api.json` (canned Score Object from CONTRACTS) → build **Upload screen**, **Voice-A/B form**, **Results screen** (all 5 network curves + composite engagement curve) wired to the mock. Needs only CONTRACTS. Also wire the **Auth0 SPA SDK** (popup mode) and send `Authorization: Bearer <auth0_jwt>` on API calls; implement **polling** of `GET /tests/{id}` until `status` is `complete`/`failed`.
 - **B [PARALLEL]:** `scoring/tribe_model.py` + a first `scoring/score.py` that returns a **real ScoreObject for one stock clip** (metrics can be rough). Needs only CONTRACTS (to match output shape). Depends on nobody.
-- **C [PARALLEL]:** `models/schemas.py` (Pydantic from CONTRACTS), `db/mongo.py`, `mocks/mock_score.py`, and all `api/routes_*` wired to **stubs** → the full API runs end-to-end on fake data. Needs only CONTRACTS.
+- **C [PARALLEL]:** `models/schemas.py` (Pydantic from CONTRACTS), `db/mongo.py`, `mocks/mock_score.py`, and all `api/routes_*` wired to **stubs** → the full API runs end-to-end on fake data. Needs only CONTRACTS. Add **`CORSMiddleware` (allow `ALLOWED_ORIGINS`)** and **per-request Auth0 JWT verification** (against Auth0's JWKS → `user_id`) now, not at integration — without CORS every browser call from Base44 fails. Include the `POST /base-media` route and the async-`/score` + status shapes.
 - **D [PARALLEL]:** `generation/voice.py` (ElevenLabs) + `generation/overlay.py` (ffmpeg) → produce 2–3 real **voice-variant files** from a stock clip; `mocks/mock_variants.py`. Needs only a stock clip. ✅ DONE — full `generate_voice_variants()` pipeline working end-to-end: 3 voices (Rachel/Adam/Josh, `eleven_multilingual_v2`) muxed onto base_clip_1 as h264+aac (`-shortest` trims to voiceover length — flip to audio-padding if equal durations wanted). `mock_variants.py` from scaffold.
 - **Exit:** A has a clickable UI on mock data; B scores one clip for real; C's API serves fake data end-to-end; D produces real voice variants.
 
@@ -110,7 +111,7 @@ The only part with hard waits. Kept short because every stub already matches CON
 | 7 | C: real API endpoints | A integration step 3 | HARD | P3 | A runs on mock_api until then |
 | 8 | B precompute + D dataset + C Mongo | seed_demo (demo path) | HARD | P3/4 | sequence at integration |
 | 9 | C: Mongo history shape | D's Backboard RAG | SOFT (shape in CONTRACTS) | P2 | D uses mock history |
-| 10 | A: token format | C token verification | SOFT (in CONTRACTS) | P2 | agree in P0 |
+| 10 | Auth0 app + allowed origins + JWKS config | A login & C token verification | HARD | P0 | set up hour 1; client-side SPA SDK, no backend fn needed — see CONTRACTS §6. Fallback: C-minted session JWT |
 | 11 | B: region_timeline (data) | D's explainer captions | SOFT (shape in CONTRACTS) | P2 | D uses mock region_timeline |
 | 12 | B: brain_frames + region_timeline | A's brain-flipbook player | via API (HARD at integration) | P3 | A uses mock frames until then |
 
