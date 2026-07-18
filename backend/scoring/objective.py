@@ -36,8 +36,31 @@ def measure_motion(video_path: str, w: int = 96, h: int = 96, fps: int = 5) -> d
     }
 
 
-# FACE_FEATURES_TODO (Jay's idea): smiling / showing teeth / head turns / self-touch
-# as engagement cues. Needs a face-landmark model (e.g. mediapipe FaceMesh +
-# blendshapes) to get: mouth-open (teeth), smile (mouth-corner lift), head-pose
-# delta (turns), and face-region motion. Build as a separate objective signal and
-# validate against labelled pairs before trusting "more expression = more engaging".
+def _sample_frames(video_path: str, w: int, h: int, fps: int, gray: bool = True):
+    px = "gray" if gray else "rgb24"
+    fmt = "gray" if gray else "rgb24"
+    cmd = ["ffmpeg", "-i", video_path, "-vf", f"scale={w}:{h}" + (",format=gray" if gray else ""),
+           "-r", str(fps), "-f", "rawvideo", "-pix_fmt", px, "pipe:1"]
+    raw = subprocess.run(cmd, capture_output=True).stdout
+    ch = 1 if gray else 3
+    n = raw and len(raw) // (w * h * ch)
+    if not n:
+        return None
+    arr = np.frombuffer(raw, np.uint8)[: n * w * h * ch].astype(np.float32)
+    return arr.reshape((n, h, w) if gray else (n, h, w, ch))
+
+
+def measure_sharpness(video_path: str, w: int = 240, h: int = 240, fps: int = 2) -> dict:
+    """Laplacian variance = focus/sharpness. Low = blurry/soft. Model-free."""
+    frames = _sample_frames(video_path, w, h, fps, gray=True)
+    if frames is None:
+        return {"sharpness": 0.0}
+    # Laplacian kernel via numpy (no cv2 dependency for this one).
+    k = np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]], dtype=np.float32)
+    vals = []
+    for f in frames:
+        lap = (
+            f[2:, 1:-1] + f[:-2, 1:-1] + f[1:-1, 2:] + f[1:-1, :-2] - 4 * f[1:-1, 1:-1]
+        )
+        vals.append(float(lap.var()))
+    return {"sharpness": round(float(np.mean(vals)), 2)}

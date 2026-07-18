@@ -39,6 +39,56 @@ tribe_image = (
 )
 
 
+# Model-free objective signals (CPU): motion, sharpness, YOLO clarity,
+# MediaPipe face expression, Whisper transcript.
+objective_image = (
+    modal.Image.debian_slim(python_version="3.11")
+    .apt_install("ffmpeg", "libgl1", "libglib2.0-0")
+    .pip_install(
+        "numpy", "opencv-python-headless", "ultralytics", "mediapipe", "openai-whisper"
+    )
+    .add_local_python_source("backend")
+)
+
+
+@app.function(image=objective_image, volumes={CACHE_DIR: cache}, timeout=5400)
+def analyze_objective(subdir: str = "eval", names: str = "") -> dict:
+    """Run all model-free signals on the clips: motion, sharpness (blur), object
+    clarity (YOLO), facial expression (MediaPipe), speech transcript (Whisper).
+    Each is wrapped so one failing model doesn't sink the rest."""
+    import json
+    from pathlib import Path
+
+    from backend.scoring.face import analyze_face
+    from backend.scoring.objects import detect_objects
+    from backend.scoring.objective import measure_motion, measure_sharpness
+    from backend.scoring.transcript import transcribe
+
+    folder = Path(CACHE_DIR) / "media" / subdir
+    wanted = {n.strip() for n in names.split(",") if n.strip()}
+    clips = {p.stem: str(p) for p in sorted(folder.glob("*.mp4")) if not wanted or p.stem in wanted}
+
+    def safe(fn):
+        try:
+            return fn()
+        except Exception as e:
+            return {"error": str(e)[:250]}
+
+    out = {}
+    for name, path in clips.items():
+        out[name] = {
+            "motion": measure_motion(path)["mean_motion"],
+            "sharpness": measure_sharpness(path)["sharpness"],
+            "clarity": safe(lambda: detect_objects(path, CACHE_DIR)),
+            "face": safe(lambda: analyze_face(path, CACHE_DIR)),
+            "speech": safe(lambda: transcribe(path, CACHE_DIR)),
+        }
+        cache.commit()
+        print(f"done {name}: {json.dumps(out[name])[:400]}")
+    print("OBJECTIVE:\n" + json.dumps(out, indent=2))
+    return out
+
+
 @app.function(image=image)
 @modal.asgi_app()
 def api():
@@ -105,9 +155,10 @@ def mask_test() -> dict:
 
 
 @app.function(gpu="A100", image=tribe_image, volumes={CACHE_DIR: cache}, timeout=7200)
-def eval_folder(subdir: str = "eval") -> dict:
-    """Score every clip in /cache/media/<subdir>, on one shared scale. Returns
-    per-clip metrics under both normalizations. Pairing/winners applied after."""
+def eval_folder(subdir: str = "eval", names: str = "") -> dict:
+    """Score clips in /cache/media/<subdir> on one shared scale. `names` =
+    optional comma-separated stems to limit to (e.g. "IMG_7024,IMG_7025").
+    Returns per-clip metrics under both normalizations."""
     import json
     from pathlib import Path
 
@@ -115,7 +166,12 @@ def eval_folder(subdir: str = "eval") -> dict:
     from backend.scoring.tribe_model import load_model
 
     folder = Path(CACHE_DIR) / "media" / subdir
-    clips = {p.stem: str(p) for p in sorted(folder.glob("*.mp4"))}
+    wanted = {n.strip() for n in names.split(",") if n.strip()}
+    clips = {
+        p.stem: str(p)
+        for p in sorted(folder.glob("*.mp4"))
+        if not wanted or p.stem in wanted
+    }
     print(f"Scoring {len(clips)} clips: {list(clips)}")
 
     model = load_model(CACHE_DIR)
