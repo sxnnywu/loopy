@@ -68,7 +68,7 @@ Nothing real starts until this is done. Do it synchronously in the first ~hour.
 
 ## Phase 1 — Build against mocks  [maximum parallelism · all four independent]
 This is the big parallel window. No one waits on anyone (only on Phase 0).
-- **A [PARALLEL]:** `frontend/mock_api.json` (canned Score Object from CONTRACTS) → build **Upload screen**, **Voice-A/B form**, **Results screen** (per-network bars + engagement curve) wired to the mock. Needs only CONTRACTS.
+- **A [PARALLEL]:** `frontend/mock_api.json` (canned Score Object from CONTRACTS) → build **Upload screen**, **Voice-A/B form**, **Results screen** (all 5 network curves + composite engagement curve) wired to the mock. Needs only CONTRACTS.
 - **B [PARALLEL]:** `scoring/tribe_model.py` + a first `scoring/score.py` that returns a **real ScoreObject for one stock clip** (metrics can be rough). Needs only CONTRACTS (to match output shape). Depends on nobody.
 - **C [PARALLEL]:** `models/schemas.py` (Pydantic from CONTRACTS), `db/mongo.py`, `mocks/mock_score.py`, and all `api/routes_*` wired to **stubs** → the full API runs end-to-end on fake data. Needs only CONTRACTS.
 - **D [PARALLEL]:** `generation/voice.py` (ElevenLabs) + `generation/overlay.py` (ffmpeg) → produce 2–3 real **voice-variant files** from a stock clip; `mocks/mock_variants.py`. Needs only a stock clip.

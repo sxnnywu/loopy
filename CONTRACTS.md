@@ -38,6 +38,7 @@ The canonical payload **B produces, C stores, A renders.** Exact shape:
     "motion":       [0.0, 0.22, 0.41],
     "default_mode": [0.0, 0.08, 0.15]
   },
+  "engagement": [0.0, 0.10, 0.28],
   "metrics": { "peak": 0.82, "sustained": 0.61, "retention": 0.74, "overall": 0.70 },
   "brain_frames": ["media/var_1a2b3c4d5e6f_brain_000.png", "media/var_1a2b3c4d5e6f_brain_001.png"],
   "region_timeline": [
@@ -52,6 +53,7 @@ Rules:
 - Every `networks.<name>` array has the **same length** = `round(duration_sec * sample_rate_hz)`, aligned to t=0 (video start), one sample per second.
 - All array values and all metrics are floats in **[0,1]**, higher = more engagement. Already normalized by B — **A does not re-normalize.**
 - `metrics.overall` = B's composite (documented in `scoring/metrics.py`); `retention` = engagement sustained through the final third (the CTA window).
+- `engagement`: the composite engagement curve — the weighted blend of the 5 networks that the metrics are computed from; same length/alignment as the network arrays, floats [0,1]. The UI plots this **plus all 5 individual network curves**.
 - Missing/failed score → the variant's score is `null` and the test carries `status: "failed"`; A must handle null.
 - `brain_frames`: one rendered brain PNG per second (media_keys, ordered t=0..N) for the flipbook; same length as the network arrays. Produced by B (nilearn/pycortex).
 - `region_timeline`: one entry per second, aligned to `brain_frames` and the network arrays. `top_network` ∈ NETWORKS, `top_region` ∈ the region list (§2), `activation` a float [0,1]. **Data only, from B** — the plain-English captions come from D's explainer (see §5 `/explain`).
@@ -136,3 +138,4 @@ Common codes: `bad_request`, `unauthorized`, `not_found`, `scoring_failed`, `int
 ## 10. Change log
 - 2026-07-18 — initial contract drafted (A/B/C/D to ratify in Phase 0 before freezing).
 - 2026-07-18 — brain-animation feature: Score Object gains `brain_frames` + `region_timeline`; added region vocabulary (§2) and `POST /explain` (§5).
+- 2026-07-18 — display: added `engagement` composite curve to the Score Object (§3); results screen now shows all 5 network curves + the composite curve.

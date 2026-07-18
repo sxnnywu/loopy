@@ -15,7 +15,7 @@ After this, everyone codes against mocks.
 ## The four lanes
 
 ### Person A — Frontend & Design (Base44)   [you]
-- **Owns:** the whole Base44 app — upload screen, Voice-A/B script form, results/winner screen (per-network bars + engagement-over-time curve), the side-by-side player (video + brain-frame flipbook synced per second + live explainer caption), history view, login (Base44 auth), the design system, and the demo/pitch visuals.
+- **Owns:** the whole Base44 app — upload screen, Voice-A/B script form, results/winner screen (all 5 network curves + the composite engagement curve over time, plus per-network summary bars), the side-by-side player (video + brain-frame flipbook synced per second + live explainer caption), history view, login (Base44 auth), the design system, and the demo/pitch visuals.
 - **Does NOT own:** any scoring, data, or generation logic.
 - **Interface:** consumes the API response JSON.
 - **Starts immediately with:** a mock API returning a hardcoded Score Object → builds the entire UI without waiting. Integrates the real API at the end.
