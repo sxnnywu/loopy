@@ -121,6 +121,10 @@ def api():
     # trailing slash (Auth0 matches the string exactly).
     os.environ.setdefault("AUTH0_DOMAIN", "dev-1xz0uq0mv6hryu17.us.auth0.com")
     os.environ.setdefault("AUTH0_AUDIENCE", "https://api.reeledin.app")
+    # SCORING FLIP (team request): new tests batch-score on the A100 for real.
+    # Expect status=scoring for minutes + ~$1-4/run; already-scored (seeded/
+    # precomputed) tests still skip the GPU entirely, so the demo path is immune.
+    os.environ.setdefault("SCORING_MODE", "gpu")
     from backend.main import app as fastapi_app
 
     return fastapi_app
