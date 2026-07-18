@@ -558,5 +558,18 @@
       "duration_sec": 18.0,
       "sample_rate_hz": 1
     }
-  ]
+  ],
+  "analysis": {
+    "mode": "comparison",
+    "objective": "retention",
+    "ranking": [
+      { "variant_id": "var_demoB", "label": "B (hook 2)", "score": 1.0 },
+      { "variant_id": "var_demoA", "label": "A (hook 1)", "score": 0.87 }
+    ],
+    "network_advantage": {
+      "default_mode": 0.12, "visual": 0.04, "language": 0.02, "auditory": -0.01, "motion": 0.0
+    },
+    "decisive_network": "default_mode",
+    "signal_advantage": null
+  }
 }

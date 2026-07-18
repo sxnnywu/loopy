@@ -68,10 +68,20 @@ class User(BaseModel):
     display_name: str
     created_at: str
 
+class Analysis(BaseModel):
+    """How the frontend presents this test (CONTRACTS §3a). `mode` is the switch."""
+    mode: str                                    # "profile" | "comparison"
+    objective: Optional[str] = None              # comparison only
+    ranking: Optional[list] = None               # [{variant_id, label, score}], objective desc
+    network_advantage: Optional[dict] = None     # winner minus runner-up, per network (§7 family A)
+    decisive_network: Optional[str] = None       # network that most separated the winner
+    signal_advantage: Optional[dict] = None      # §7 family B (production signals) — awaits B
+
 class TestDetail(BaseModel):
     test: Test
     variants: list[Variant]
     scores: list[ScoreObject]
+    analysis: Analysis
 
 class WinnerRef(BaseModel):
     variant_id: str

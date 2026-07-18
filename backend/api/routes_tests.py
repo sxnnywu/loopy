@@ -3,6 +3,7 @@ import json
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 
+from backend.analysis import build_analysis
 from backend.api.auth import current_user
 from backend.api.errors import ApiError, not_found
 from backend.db.repo import repo
@@ -94,4 +95,7 @@ async def get_test(test_id: str, user=Depends(current_user)):
     test = await get_test_or_404(test_id)
     variants = await repo().variants_for(test)
     scores = await repo().scores_for(test)
-    return {"test": test, "variants": variants, "scores": scores}
+    # `analysis` tells the frontend HOW to present (profile vs comparison) so the
+    # display science lives server-side (CONTRACTS §3a). Additive — old fields unchanged.
+    return {"test": test, "variants": variants, "scores": scores,
+            "analysis": build_analysis(test, variants, scores)}
