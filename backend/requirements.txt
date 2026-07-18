@@ -1,7 +1,0 @@
-# Loopy backend — Person C (analysis) working set.
-# Full team stack (FastAPI, Motor, httpx) lands as A/B commit their files.
-pydantic==2.9.2
-pymongo==4.10.1
-# analysis / findings (used in later steps):
-google-genai==0.8.0        # Gemini API (2026 SDK)
-python-dotenv==1.0.1
