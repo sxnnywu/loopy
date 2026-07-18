@@ -71,6 +71,13 @@ def suggest(base_media_key: str, context: str = "", n: int = 3) -> dict:
     out = json.loads(resp.json()["candidates"][0]["content"]["parts"][0]["text"])
     for i, v in enumerate(out.get("variants", [])):
         v.setdefault("label", chr(ord("A") + i))
+        # keep only the contract's knobs — Gemini sometimes invents keys
+        vs = {k: v["voice_settings"][k] for k in ("speed", "stability", "style")
+              if k in v.get("voice_settings", {})}
+        if vs:
+            v["voice_settings"] = vs
+        else:
+            v.pop("voice_settings", None)
     return out
 
 
