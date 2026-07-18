@@ -17,7 +17,11 @@ existing audio/voiceover it already has. Based on what is actually there — pac
 subject, mood, how the first 3 seconds look, what the current audio does or fails to do —
 propose {n} voiceover variants the creator could OPTIONALLY test over this footage.
 
-Vary the axes that matter for THIS footage: script wording/hook style, delivery speed, tone.
+THE VIDEO IS THE CREATIVE VISION — DO NOT REPLACE IT. Your variants are small, testable
+tweaks of single variables (hook wording, delivery speed, tone of the read) around what the
+footage already is. Every script must fit the mood and subject actually on screen. Never
+invent product names, brands, or a new concept for the video. If the creator context clashes
+with the footage, say so in the rationale and keep the scripts faithful to the footage.
 If the video already has a voiceover, treat it as the baseline your variants compete against.
 {context_line}
 
