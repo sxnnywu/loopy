@@ -27,7 +27,8 @@ If the video already has a voiceover, treat it as the baseline your variants com
 {context_line}
 
 Return JSON only, matching exactly:
-{{"variants": [{{"label": "A", "script": "...", "voice_settings": {{"speed": 1.0}}}}, ...],
+{{"variants": [{{"label": "A", "script": "...", "voice_settings": {{"speed": 1.0}},
+    "note": "one sentence, plain creator language: the specific creative bet this variant tests, e.g. 'Tests a question-style hook — does curiosity beat a bold claim on this footage?'"}}, ...],
   "rationale": "2-3 sentences: what you saw in the footage and why these variants test it",
   "transcript": "the words spoken in the video, transcribed verbatim — or null if no speech"}}
 
@@ -75,6 +76,7 @@ def suggest(base_media_key: str, context: str = "", n: int = 3) -> dict:
     out.setdefault("transcript", None)
     for i, v in enumerate(out.get("variants", [])):
         v.setdefault("label", chr(ord("A") + i))
+        v.setdefault("note", "")
         # keep only the contract's knobs — Gemini sometimes invents keys
         vs = {k: v["voice_settings"][k] for k in ("speed", "stability", "style")
               if k in v.get("voice_settings", {})}
