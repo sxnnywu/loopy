@@ -20,11 +20,15 @@ from pathlib import Path
 DEMO_USER = "usr_demo00000000"
 
 
-async def seed(folder: str = "demo/precomputed", name: str = "Demo — Hook Battle") -> str:
+async def seed(folder: str = "demo/precomputed", name: str = "Demo — Hook Battle",
+               media_dir: str = "media", only: str = "") -> str:
     from backend.db.repo import repo
     from backend.util import new_id, now_iso
 
     files = sorted(Path(folder).glob("*.json"))
+    if only:  # comma-separated stems, e.g. "IMG_7024,IMG_7025"
+        wanted = {s.strip() for s in only.split(",")}
+        files = [f for f in files if f.stem in wanted]
     if len(files) < 2:
         raise SystemExit(f"need >=2 Score Object JSONs in {folder}/ (found {len(files)})")
 
@@ -47,7 +51,8 @@ async def seed(folder: str = "demo/precomputed", name: str = "Demo — Hook Batt
         await r.insert_variant({
             "id": variant_id, "test_id": test["id"],
             "label": string.ascii_uppercase[i % 26],
-            "media_key": f"media/{variant_id}.mp4",
+            # media_dir: where the actual videos live on the Volume (e.g. media/eval)
+            "media_key": f"{media_dir}/{variant_id}.mp4",
             "params": {"note": f"precomputed from {path.name}"},
             "created_at": now_iso(),
         })
@@ -87,7 +92,11 @@ if __name__ == "__main__":
     if "--docs" in sys.argv:
         asyncio.run(seed_docs(args[0] if args else "demo/seed/demo_docs.json"))
     else:
-        name = "Demo — Hook Battle"
-        if "--name" in sys.argv:
-            name = sys.argv[sys.argv.index("--name") + 1]
-        asyncio.run(seed(args[0] if args else "demo/precomputed", name))
+        def flag(name, default):
+            return sys.argv[sys.argv.index(name) + 1] if name in sys.argv else default
+        asyncio.run(seed(
+            args[0] if args else "demo/precomputed",
+            name=flag("--name", "Demo — Hook Battle"),
+            media_dir=flag("--media-dir", "media"),
+            only=flag("--only", ""),
+        ))
