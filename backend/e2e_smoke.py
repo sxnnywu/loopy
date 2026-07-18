@@ -21,7 +21,7 @@ POLL_LIMIT = 60  # 15 min — covers a cold GPU start
 
 
 def main():
-    base = (sys.argv[1] if len(sys.argv) > 1 else DEFAULT_BASE).rstrip("/") + "/api"
+    base = ((len(sys.argv) > 1 and sys.argv[1]) or DEFAULT_BASE).rstrip("/") + "/api"
     clip = sys.argv[2] if len(sys.argv) > 2 else "demo/dataset/base_clip_1.mp4"
     H = {"Authorization": "Bearer dev"}  # dev-fallback auth; use a real Auth0 JWT if enabled
 
@@ -43,7 +43,9 @@ def main():
     r = requests.post(f"{base}/suggest", headers=H, timeout=300,
                       json={"base_media_key": mk, "context": "short-form brand teaser"})
     plan = r.json()
+    assert "transcript" in plan, "/suggest missing `transcript` (CONTRACTS §5)"
     print("3 suggest rationale:", plan.get("rationale", "")[:120])
+    print("  transcript:", (plan["transcript"] or "<none — no speech in clip>")[:120])
 
     r = requests.post(f"{base}/tests/{tid}/voice-variants", headers=H, timeout=600,
                       json={"base_media_key": mk, "variants": plan["variants"][:2]})
