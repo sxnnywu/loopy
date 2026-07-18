@@ -104,6 +104,7 @@ class VoiceSpec(BaseModel):
     label: Optional[str] = None
     voice_id: Optional[str] = None
     voice_settings: dict = Field(default_factory=dict)  # speed [0.7,1.2], stability/style [0,1]
+    note: Optional[str] = None  # from /suggest: the creative bet this variant tests -> params.note
 
 class VoiceVariantsReq(BaseModel):
     base_media_key: str

@@ -21,16 +21,18 @@ router = APIRouter()
 
 _LABELS = string.ascii_uppercase
 
-_STUB_SUGGEST = {
+_STUB_SUGGEST = {  # shape parity with the real Gemini response (§5: note + transcript)
     "variants": [
         {"label": "A", "script": "Stop scrolling — watch what happens next.",
-         "voice_settings": {"speed": 1.1}},
+         "voice_settings": {"speed": 1.1}, "note": "Tests an urgency hook at fast pacing."},
         {"label": "B", "script": "Here's the one thing everyone misses.",
-         "voice_settings": {"speed": 0.95}},
-        {"label": "C", "script": "You've never seen it from this angle."},
+         "voice_settings": {"speed": 0.95}, "note": "Tests a curiosity-gap hook at neutral pacing."},
+        {"label": "C", "script": "You've never seen it from this angle.",
+         "note": "Tests a novelty-framing hook at default delivery."},
     ],
     "rationale": "Stub plan — three hook styles at contrasting pacing. "
                  "GENERATION_MODE=real wires Gemini to watch the footage and tailor these.",
+    "transcript": "",
 }
 
 _STUB_TIPS = ("Hook in the first 2 seconds, keep cuts under 3 seconds, and land the CTA "
@@ -51,8 +53,10 @@ async def voice_variants(test_id: str, body: VoiceVariantsReq, user=Depends(curr
         except Exception as e:
             raise ApiError("internal", f"voice generation failed: {e}", 500)
         commit_media()  # generated mp4s must be visible to the GPU scorer's reload()
-        for variant in made:
+        for variant, spec in zip(made, body.variants):  # D returns in spec order
             variant["test_id"] = test_id  # D returns test_id=None; C assigns on persist
+            if spec.note:  # §5: suggested variants' creative-bet note lands in params.note
+                variant["params"]["note"] = spec.note
     else:
         made = []
         for i, spec in enumerate(body.variants):
@@ -63,7 +67,8 @@ async def voice_variants(test_id: str, body: VoiceVariantsReq, user=Depends(curr
                 # stub: no real mux — point at the base video so the UI can play it
                 "media_key": body.base_media_key,
                 "params": {"script": spec.script, "voice_id": spec.voice_id,
-                           "voice_settings": spec.voice_settings},
+                           "voice_settings": spec.voice_settings,
+                           **({"note": spec.note} if spec.note else {})},
                 "created_at": now_iso(),
             })
 
