@@ -104,6 +104,27 @@ def mask_test() -> dict:
     return info
 
 
+@app.function(gpu="A100", image=tribe_image, volumes={CACHE_DIR: cache}, timeout=7200)
+def eval_folder(subdir: str = "eval") -> dict:
+    """Score every clip in /cache/media/<subdir>, on one shared scale. Returns
+    per-clip metrics under both normalizations. Pairing/winners applied after."""
+    import json
+    from pathlib import Path
+
+    from backend.scoring.eval_ab import run_ab_eval
+    from backend.scoring.tribe_model import load_model
+
+    folder = Path(CACHE_DIR) / "media" / subdir
+    clips = {p.stem: str(p) for p in sorted(folder.glob("*.mp4"))}
+    print(f"Scoring {len(clips)} clips: {list(clips)}")
+
+    model = load_model(CACHE_DIR)
+    results = run_ab_eval(model, clips)
+    cache.commit()
+    print("EVAL RESULTS:\n" + json.dumps(results, indent=2))
+    return results
+
+
 @app.function(gpu="A100", image=tribe_image, volumes={CACHE_DIR: cache}, timeout=3600)
 def dryrun_eval() -> dict:
     """Generate a CALM clip and a BUSY clip, score both, and show that the
