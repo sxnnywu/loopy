@@ -1,0 +1,562 @@
+{
+  "test": {
+    "id": "test_demo0001",
+    "user_id": "usr_demo",
+    "type": "upload",
+    "objective": "retention",
+    "status": "complete",
+    "variant_ids": [
+      "var_demoA",
+      "var_demoB"
+    ],
+    "winner_variant_id": "var_demoB",
+    "created_at": "2026-07-19T04:20:00Z",
+    "updated_at": "2026-07-19T04:21:00Z"
+  },
+  "variants": [
+    {
+      "id": "var_demoA",
+      "test_id": "test_demo0001",
+      "label": "A (hook 1)",
+      "media_key": "media/var_demoA.mp4",
+      "params": {},
+      "created_at": "2026-07-19T04:20:00Z"
+    },
+    {
+      "id": "var_demoB",
+      "test_id": "test_demo0001",
+      "label": "B (hook 2)",
+      "media_key": "media/var_demoB.mp4",
+      "params": {},
+      "created_at": "2026-07-19T04:20:00Z"
+    }
+  ],
+  "scores": [
+    {
+      "variant_id": "var_demoA",
+      "networks": {
+        "visual": [
+          0.468,
+          0.651,
+          0.789,
+          0.849,
+          0.815,
+          0.696,
+          0.521,
+          0.333,
+          0.178,
+          0.094,
+          0.101,
+          0.198,
+          0.361,
+          0.55,
+          0.719,
+          0.826,
+          0.846,
+          0.773
+        ],
+        "auditory": [
+          0.482,
+          0.571,
+          0.6,
+          0.563,
+          0.469,
+          0.341,
+          0.211,
+          0.109,
+          0.062,
+          0.08,
+          0.16,
+          0.281,
+          0.414,
+          0.527,
+          0.591,
+          0.592,
+          0.528,
+          0.416
+        ],
+        "language": [
+          0.666,
+          0.7,
+          0.657,
+          0.547,
+          0.398,
+          0.246,
+          0.127,
+          0.072,
+          0.093,
+          0.186,
+          0.328,
+          0.483,
+          0.615,
+          0.69,
+          0.691,
+          0.616,
+          0.486,
+          0.33
+        ],
+        "motion": [
+          0.498,
+          0.457,
+          0.371,
+          0.262,
+          0.156,
+          0.079,
+          0.05,
+          0.076,
+          0.151,
+          0.256,
+          0.366,
+          0.454,
+          0.497,
+          0.487,
+          0.424,
+          0.325,
+          0.214,
+          0.118
+        ],
+        "default_mode": [
+          0.615,
+          0.786,
+          0.885,
+          0.889,
+          0.797,
+          0.631,
+          0.431,
+          0.247,
+          0.124,
+          0.092,
+          0.158,
+          0.307,
+          0.502,
+          0.695,
+          0.839,
+          0.899,
+          0.86,
+          0.732
+        ]
+      },
+      "engagement": [
+        0.557,
+        0.67,
+        0.721,
+        0.699,
+        0.608,
+        0.472,
+        0.322,
+        0.196,
+        0.125,
+        0.126,
+        0.199,
+        0.326,
+        0.476,
+        0.612,
+        0.701,
+        0.721,
+        0.667,
+        0.553
+      ],
+      "metrics": {
+        "peak": 0.721,
+        "sustained": 0.486,
+        "retention": 1.0,
+        "overall": 0.687
+      },
+      "brain_frames": [
+        "media/var_demoA_brain_000.png",
+        "media/var_demoA_brain_001.png",
+        "media/var_demoA_brain_002.png",
+        "media/var_demoA_brain_003.png",
+        "media/var_demoA_brain_004.png",
+        "media/var_demoA_brain_005.png",
+        "media/var_demoA_brain_006.png",
+        "media/var_demoA_brain_007.png",
+        "media/var_demoA_brain_008.png",
+        "media/var_demoA_brain_009.png",
+        "media/var_demoA_brain_010.png",
+        "media/var_demoA_brain_011.png",
+        "media/var_demoA_brain_012.png",
+        "media/var_demoA_brain_013.png",
+        "media/var_demoA_brain_014.png",
+        "media/var_demoA_brain_015.png",
+        "media/var_demoA_brain_016.png",
+        "media/var_demoA_brain_017.png"
+      ],
+      "region_timeline": [
+        {
+          "t": 0,
+          "top_network": "language",
+          "top_region": "broca_area",
+          "activation": 0.666
+        },
+        {
+          "t": 1,
+          "top_network": "default_mode",
+          "top_region": "prefrontal_dmn",
+          "activation": 0.786
+        },
+        {
+          "t": 2,
+          "top_network": "default_mode",
+          "top_region": "prefrontal_dmn",
+          "activation": 0.885
+        },
+        {
+          "t": 3,
+          "top_network": "default_mode",
+          "top_region": "prefrontal_dmn",
+          "activation": 0.889
+        },
+        {
+          "t": 4,
+          "top_network": "visual",
+          "top_region": "fusiform_face_area",
+          "activation": 0.815
+        },
+        {
+          "t": 5,
+          "top_network": "visual",
+          "top_region": "fusiform_face_area",
+          "activation": 0.696
+        },
+        {
+          "t": 6,
+          "top_network": "visual",
+          "top_region": "fusiform_face_area",
+          "activation": 0.521
+        },
+        {
+          "t": 7,
+          "top_network": "visual",
+          "top_region": "fusiform_face_area",
+          "activation": 0.333
+        },
+        {
+          "t": 8,
+          "top_network": "visual",
+          "top_region": "fusiform_face_area",
+          "activation": 0.178
+        },
+        {
+          "t": 9,
+          "top_network": "motion",
+          "top_region": "motion_mt",
+          "activation": 0.256
+        },
+        {
+          "t": 10,
+          "top_network": "motion",
+          "top_region": "motion_mt",
+          "activation": 0.366
+        },
+        {
+          "t": 11,
+          "top_network": "language",
+          "top_region": "broca_area",
+          "activation": 0.483
+        },
+        {
+          "t": 12,
+          "top_network": "language",
+          "top_region": "broca_area",
+          "activation": 0.615
+        },
+        {
+          "t": 13,
+          "top_network": "default_mode",
+          "top_region": "prefrontal_dmn",
+          "activation": 0.695
+        },
+        {
+          "t": 14,
+          "top_network": "default_mode",
+          "top_region": "prefrontal_dmn",
+          "activation": 0.839
+        },
+        {
+          "t": 15,
+          "top_network": "default_mode",
+          "top_region": "prefrontal_dmn",
+          "activation": 0.899
+        },
+        {
+          "t": 16,
+          "top_network": "default_mode",
+          "top_region": "prefrontal_dmn",
+          "activation": 0.86
+        },
+        {
+          "t": 17,
+          "top_network": "visual",
+          "top_region": "fusiform_face_area",
+          "activation": 0.773
+        }
+      ],
+      "duration_sec": 18.0,
+      "sample_rate_hz": 1
+    },
+    {
+      "variant_id": "var_demoB",
+      "networks": {
+        "visual": [
+          0.468,
+          0.651,
+          0.789,
+          0.849,
+          0.815,
+          0.696,
+          0.521,
+          0.333,
+          0.178,
+          0.094,
+          0.101,
+          0.198,
+          0.361,
+          0.55,
+          0.719,
+          0.826,
+          0.846,
+          0.773
+        ],
+        "auditory": [
+          0.482,
+          0.571,
+          0.6,
+          0.563,
+          0.469,
+          0.341,
+          0.211,
+          0.109,
+          0.062,
+          0.08,
+          0.16,
+          0.281,
+          0.414,
+          0.527,
+          0.591,
+          0.592,
+          0.528,
+          0.416
+        ],
+        "language": [
+          0.666,
+          0.7,
+          0.657,
+          0.547,
+          0.398,
+          0.246,
+          0.127,
+          0.072,
+          0.093,
+          0.186,
+          0.328,
+          0.483,
+          0.615,
+          0.69,
+          0.691,
+          0.616,
+          0.486,
+          0.33
+        ],
+        "motion": [
+          0.498,
+          0.457,
+          0.371,
+          0.262,
+          0.156,
+          0.079,
+          0.05,
+          0.076,
+          0.151,
+          0.256,
+          0.366,
+          0.454,
+          0.497,
+          0.487,
+          0.424,
+          0.325,
+          0.214,
+          0.118
+        ],
+        "default_mode": [
+          0.615,
+          0.786,
+          0.885,
+          0.889,
+          0.797,
+          0.631,
+          0.431,
+          0.247,
+          0.124,
+          0.092,
+          0.158,
+          0.307,
+          0.502,
+          0.695,
+          0.839,
+          0.899,
+          0.86,
+          0.732
+        ]
+      },
+      "engagement": [
+        0.557,
+        0.67,
+        0.721,
+        0.699,
+        0.608,
+        0.472,
+        0.322,
+        0.196,
+        0.125,
+        0.126,
+        0.199,
+        0.326,
+        0.476,
+        0.612,
+        0.701,
+        0.721,
+        0.667,
+        0.553
+      ],
+      "metrics": {
+        "peak": 0.721,
+        "sustained": 0.486,
+        "retention": 1.0,
+        "overall": 0.687
+      },
+      "brain_frames": [
+        "media/var_demoB_brain_000.png",
+        "media/var_demoB_brain_001.png",
+        "media/var_demoB_brain_002.png",
+        "media/var_demoB_brain_003.png",
+        "media/var_demoB_brain_004.png",
+        "media/var_demoB_brain_005.png",
+        "media/var_demoB_brain_006.png",
+        "media/var_demoB_brain_007.png",
+        "media/var_demoB_brain_008.png",
+        "media/var_demoB_brain_009.png",
+        "media/var_demoB_brain_010.png",
+        "media/var_demoB_brain_011.png",
+        "media/var_demoB_brain_012.png",
+        "media/var_demoB_brain_013.png",
+        "media/var_demoB_brain_014.png",
+        "media/var_demoB_brain_015.png",
+        "media/var_demoB_brain_016.png",
+        "media/var_demoB_brain_017.png"
+      ],
+      "region_timeline": [
+        {
+          "t": 0,
+          "top_network": "language",
+          "top_region": "broca_area",
+          "activation": 0.666
+        },
+        {
+          "t": 1,
+          "top_network": "default_mode",
+          "top_region": "prefrontal_dmn",
+          "activation": 0.786
+        },
+        {
+          "t": 2,
+          "top_network": "default_mode",
+          "top_region": "prefrontal_dmn",
+          "activation": 0.885
+        },
+        {
+          "t": 3,
+          "top_network": "default_mode",
+          "top_region": "prefrontal_dmn",
+          "activation": 0.889
+        },
+        {
+          "t": 4,
+          "top_network": "visual",
+          "top_region": "fusiform_face_area",
+          "activation": 0.815
+        },
+        {
+          "t": 5,
+          "top_network": "visual",
+          "top_region": "fusiform_face_area",
+          "activation": 0.696
+        },
+        {
+          "t": 6,
+          "top_network": "visual",
+          "top_region": "fusiform_face_area",
+          "activation": 0.521
+        },
+        {
+          "t": 7,
+          "top_network": "visual",
+          "top_region": "fusiform_face_area",
+          "activation": 0.333
+        },
+        {
+          "t": 8,
+          "top_network": "visual",
+          "top_region": "fusiform_face_area",
+          "activation": 0.178
+        },
+        {
+          "t": 9,
+          "top_network": "motion",
+          "top_region": "motion_mt",
+          "activation": 0.256
+        },
+        {
+          "t": 10,
+          "top_network": "motion",
+          "top_region": "motion_mt",
+          "activation": 0.366
+        },
+        {
+          "t": 11,
+          "top_network": "language",
+          "top_region": "broca_area",
+          "activation": 0.483
+        },
+        {
+          "t": 12,
+          "top_network": "language",
+          "top_region": "broca_area",
+          "activation": 0.615
+        },
+        {
+          "t": 13,
+          "top_network": "default_mode",
+          "top_region": "prefrontal_dmn",
+          "activation": 0.695
+        },
+        {
+          "t": 14,
+          "top_network": "default_mode",
+          "top_region": "prefrontal_dmn",
+          "activation": 0.839
+        },
+        {
+          "t": 15,
+          "top_network": "default_mode",
+          "top_region": "prefrontal_dmn",
+          "activation": 0.899
+        },
+        {
+          "t": 16,
+          "top_network": "default_mode",
+          "top_region": "prefrontal_dmn",
+          "activation": 0.86
+        },
+        {
+          "t": 17,
+          "top_network": "visual",
+          "top_region": "fusiform_face_area",
+          "activation": 0.773
+        }
+      ],
+      "duration_sec": 18.0,
+      "sample_rate_hz": 1
+    }
+  ]
+}
