@@ -8,7 +8,7 @@ Four parallel lanes with **two frozen contracts** so nobody blocks anybody. The 
 ## Hour 0–1: freeze two contracts (whole team, together)
 Everything parallelizes once these are agreed and written into a shared `CONTRACTS.md` (treat as law):
 1. **The API contract** — endpoints + request/response JSON. Owned by C, agreed with A.
-2. **The Score Object** — the shape of a scored variant: the 5 network time-series (visual, auditory, language, motion, default-mode) + metrics (peak, sustained, retention-to-CTA, winner flag). Owned by B; consumed by A (display) and C (store).
+2. **The Score Object** — the shape of a scored variant: the 5 network time-series (visual, auditory, language, motion, default-mode) + metrics (peak, sustained, retention, overall). Owned by B; consumed by A (display) and C (store). The winner is decided at the test level (`winner_variant_id`), not carried in the Score Object.
 
 After this, everyone codes against mocks.
 
