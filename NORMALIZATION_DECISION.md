@@ -1,6 +1,9 @@
 # Decision record — normalization (deferred, on purpose)
 
-Owner: B (Jay). Status: **deferred, not changed.** Read with `CONTRACTS.md` §3.
+Owner: B (Jay). Status: **RATIFIED 2026-07-18 — shared scale adopted** (CONTRACTS §3 + §10
+updated; D reproduced the flip live on generated variants — shared: B wins 0.945 vs 0.929;
+per-clip: flips to A 0.757 vs 0.679). Remaining work: B ports shared scale into `score()`;
+C batches `/score` per test; re-run any precomputed demo scores.
 
 ## The issue
 Each clip's 5 brain-network curves are min-max normalized to its own 0..1 range
