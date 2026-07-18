@@ -54,6 +54,14 @@ Rules:
 - All array values and all metrics are floats in **[0,1]**, higher = more engagement. Already normalized by B — **A does not re-normalize.**
 - `metrics.overall` = B's composite (documented in `scoring/metrics.py`); `retention` = engagement sustained through the final third (the CTA window).
 - `engagement`: the composite engagement curve — the weighted blend of the 5 networks that the metrics are computed from; same length/alignment as the network arrays, floats [0,1]. The UI plots this **plus all 5 individual network curves**.
+
+**Metric formulas** (B implements these exactly; all outputs floats [0,1]). Let `E` = the `engagement` array, `N` = number of seconds:
+- `engagement[t]` = `0.30·default_mode[t] + 0.25·visual[t] + 0.20·language[t] + 0.15·auditory[t] + 0.10·motion[t]` (weights sum to 1).
+- `peak` = `max(E)`.
+- `sustained` = `mean(E)` (area under the curve ÷ duration).
+- `retention` = `mean(E over the final third) ÷ mean(E over the first third)`, clamped to [0,1].
+- `overall` = `0.5·sustained + 0.3·retention + 0.2·peak`.
+These weights/splits are design choices (a proxy, not ground truth) — tune against hand-validated examples, but change them **here first**, then in `scoring/metrics.py`.
 - Missing/failed score → the variant's score is `null` and the test carries `status: "failed"`; A must handle null.
 - `brain_frames`: one rendered brain PNG per second (media_keys, ordered t=0..N) for the flipbook; same length as the network arrays. Produced by B (nilearn/pycortex).
 - `region_timeline`: one entry per second, aligned to `brain_frames` and the network arrays. `top_network` ∈ NETWORKS, `top_region` ∈ the region list (§2), `activation` a float [0,1]. **Data only, from B** — the plain-English captions come from D's explainer (see §5 `/explain`).

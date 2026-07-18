@@ -32,7 +32,7 @@ Feed each variant into TRIBE v2 (predicts fMRI brain responses to video / audio 
 
 **Out: Phoebe** — Reeled In is an analysis tool, not real-world coordination; forcing it in = scope creep.
 
-**Minor / optional (decide by time):** **Auth0** (vs Base44 native login), a direct **Gemini** call (for the MLH Gemini prize, if not subsumed by Backboard).
+**Also locked:** a direct **Gemini** API call powers the hook/copy suggestions (claims the MLH Gemini prize); **Backboard** owns RAG/memory + the explainer. (Auth0 dropped — Base44 native login.)
 
 ## Honesty / caveats (put these in the pitch — they signal we know the science)
 - **Activation ≠ outcome.** A region lighting up ≠ "this ad sells." We present a neural *engagement signal*, a proxy.
@@ -48,11 +48,11 @@ Feed each variant into TRIBE v2 (predicts fMRI brain responses to video / audio 
 - One HT6 track only (Hardware / Environmental / Beginner) + unlimited sponsor + MLH tracks.
 
 ## Open decisions
-- **Auth:** Base44 native login (default, simplest) vs wire **Auth0** for the extra prize.
-- **Gemini:** keep one direct Gemini call for the MLH prize, or let Backboard be the whole LLM layer.
+- **Auth:** DECIDED — Base44 native login (Auth0 dropped).
+- **Gemini:** DECIDED — direct Gemini call for hook/copy suggestions (Backboard owns RAG/memory + the explainer).
 - **3D brain viz** vs charts-only for the results screen.
 - **Video-editing auto-gen** (reorder / pace / music) — stretch only; music swap easiest first.
-- **Team size / who builds what** — still needed for a task-division plan.
+- **Team:** DECIDED — A=Kimi (frontend), B=Jay (scoring), C=Seb (backend), D=Sunny (generation).
 
 ## Related docs
 - `HOW_TRIBE_V2_WORKS.md` — model deep-dive.

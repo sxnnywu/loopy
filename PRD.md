@@ -61,8 +61,8 @@ In: scoring, comparison, results, voice variants, history/memory. Out: video edi
 - **Out-of-distribution short-form** -> directional; lead with segment-level insight.
 
 ## Open questions
-- Auth0 vs Base44 native login.
-- Direct Gemini call vs Backboard-only.
+- Auth: DECIDED — Base44 native login (no Auth0).
+- Gemini: DECIDED — direct call for suggestions (Backboard owns RAG/memory + explainer).
 - 3D brain viz vs charts-only.
 - Video-editing auto-gen stretch (and first variable).
-- Team size / roles.
+- Team: A=Kimi, B=Jay, C=Seb, D=Sunny.

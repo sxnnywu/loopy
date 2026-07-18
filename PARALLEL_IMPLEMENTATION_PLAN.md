@@ -1,7 +1,7 @@
 # Reeled In — Parallel Implementation Plan
 
 Last updated: 2026-07-18. Companion to `TEAM_DIVISION.md`, `TECH_ARCHITECTURE.md`, `PRD.md`.
-People: **A** = Frontend & Design (Base44) · **B** = Scoring Engine (TRIBE/Modal) · **C** = Backend & Data (FastAPI/Mongo) · **D** = Generation & Intelligence (ElevenLabs/ffmpeg/Backboard).
+People: **A (Kimi)** = Frontend & Design (Base44) · **B (Jay)** = Scoring Engine (TRIBE/Modal) · **C (Seb)** = Backend & Data (FastAPI/Mongo) · **D (Sunny)** = Generation & Intelligence (ElevenLabs/ffmpeg/Backboard).
 
 ## How to read this
 Work is grouped into **phases** (logical stages, not fixed clock hours). Each task is tagged:
@@ -44,7 +44,7 @@ reeled-in/
 │  │  ├─ variants.py            generate_voice_variants(base, script) -> [videos]
 │  │  ├─ llm.py                 Backboard suggestions + memory/RAG
 │  │  ├─ explainer.py           region_timeline -> per-second captions (Backboard)
-│  │  └─ gemini.py              optional direct Gemini call
+│  │  └─ gemini.py              direct Gemini call — hook/copy suggestions
 │  └─ mocks/
 │     ├─ mock_score.py          [C]  canned ScoreObject (matches CONTRACTS)
 │     └─ mock_variants.py       [D]  canned variant list

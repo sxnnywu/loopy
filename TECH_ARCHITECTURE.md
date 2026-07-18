@@ -57,8 +57,8 @@ Three jobs: (a) suggest hook/CTA/copy variants; (b) RAG over a creator's past te
 ### 6. ElevenLabs — voice-variant generation
 Voice A/B flow: creator submits a voiceover/CTA script -> FastAPI calls ElevenLabs for N reads (different voices/tone/pace) -> each read is muxed onto the base video via ffmpeg (simple audio swap) -> each variant scored by TRIBE (drives auditory/language/default-mode). The only auto-generation in the MVP.
 
-### 7. Optional — Gemini, Auth0
-Gemini: one direct call (e.g. copy suggestions) to claim the MLH Gemini prize if Backboard doesn't subsume it. Auth0: swap/augment Base44 native login for the MLH Auth0 prize. Both optional; decide by time budget.
+### 7. Gemini
+Gemini: a direct Gemini API call powers the hook/copy suggestions (D owns it) — claims the MLH Gemini prize. Backboard owns RAG/memory + the explainer. Auth: Base44 native login (no Auth0).
 
 ## The scoring pipeline (what "winner" means)
 Per variant: TRIBE -> 5 network time-series (visual, auditory, language, motion, default-mode) -> metrics: **peak** engagement, **sustained** engagement (area under curve), and **retention through the CTA** (does engagement hold to the end vs collapse). Winner = highest composite on the objective the creator picks (e.g. "hold attention to the CTA"). Caveats: activation != outcome; ~1 Hz temporal smoothing (see overview).
@@ -75,13 +75,12 @@ All API keys (Modal, Mongo, Backboard, ElevenLabs, Gemini) live server-side in t
 | ElevenLabs | Voice-variant generation (Voice A/B) |
 | MongoDB Atlas | System of record (via pymongo) |
 | Backboard | LLM + memory/RAG layer + the brain-animation explainer |
-| Gemini (opt) | One direct copy-suggestion call |
-| Auth0 (opt) | Login (vs Base44 native) |
+| Gemini | Direct call — hook/copy suggestions |
 | TRIBE (ours) | Modal GPU pipeline — the technical-difficulty core |
 
 ## Open decisions
-- Auth0 vs Base44 native login.
-- Keep a direct Gemini call, or Backboard-only LLM layer.
+- Auth: DECIDED — Base44 native login (no Auth0).
+- Gemini: DECIDED — direct call for suggestions (Backboard owns RAG/memory + explainer).
 - 3D brain viz vs charts-only.
 - Video-editing auto-gen (stretch); which variable first.
 - Team size / who builds what.
