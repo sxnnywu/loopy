@@ -3,6 +3,3 @@
 __pycache__/
 *.pyc
 backend/.venv/
-# local-only copies (canonical versions live at repo root / example-loops/)
-hack-the-six-loopy/
-EXAMPLE_LOOP_SPEC.md
