@@ -71,19 +71,16 @@ Repro: `python -m scripts.seed_ci_triage_run && python -m scripts.run_analysis_d
 5. Tune nod-rate cluster to ~9% for a punchier demo number.
 6. Polish: noise-rate stat + token-budget comparison (from the open-source pattern's 100k/day cap).
 
-## 6. Sponsor tracks C is manning
+## 6. Tracks / tools C is manning
 
-The ones that live inside the analysis layer (per PARALLEL_IMPLEMENTATION_PLAN §8 + the Layer-1/Layer-2 split):
+From the confirmed stack (INTEGRATIONS_AND_STACK.md): Backboard, Pheobe, Base44, Warp, MongoDB, Gemini. The two that live in the analysis layer are mine:
 
-| Track | Why it's C's | What I ship for it |
+| Tool | Why it's C's | What I ship for it |
 |---|---|---|
-| **MongoDB Atlas (MLH)** | The analysis IS Mongo: aggregation pipelines (Tier 1), time-series events, and Vector Search + `$rerank` for failure clustering | Pipelines (done), vector clustering (step 4) |
-| **Gemini (MLH)** — analysis half | Findings narration: structured-JSON output mirroring the `Finding` model, Batch API for the analysis pass | Findings generator + report (steps 1–2). A owns the in-loop-agents half |
-| **Deloitte (Green AI)** | Token/cost distribution is already my stat — frame one finding as "loop efficiency / wasted tokens" (stalled runs burn ~4–6× tokens) | Cost finding + the 100k/day budget comparison (step 6) |
-| **Freesolo (SF flight) ★** | Plan explicitly assigns it: train the failure-clustering / finding model on their platform | Explore during step 4; only if it fits cleanly |
-| **Solana (MLH)** — stretch | Report-hash attestation is a report_builder add-on | Hash report JSON, anchor on-chain, store tx ref (only if green) |
+| **MongoDB** | The analysis IS Mongo: aggregation pipelines (Tier 1), time-series `events`, Vector Search for failure clustering | Pipelines (done), vector clustering (step 4) |
+| **Gemini** — analysis half | Findings narration: structured-JSON output mirroring the `Finding` model, Batch API for the analysis pass | Findings generator + report (steps 1–2). A owns the in-loop-agents half |
 
-Not mine: Backboard + Warp + Unifold (A), Base44 + Auth0 + ElevenLabs (D). Rule stands: declare only what's actually wired.
+Others: Backboard + Warp → A, Base44 → D, Pheobe → role still TBD (if it lands as observability/eval it may touch C — flag me).
 
 ## 7. What C needs from others
 
