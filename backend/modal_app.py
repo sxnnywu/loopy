@@ -165,11 +165,12 @@ def api():
         "ALLOWED_ORIGINS",
         "https://reeled-in.base44.app,http://localhost:3000,http://localhost:5173",
     )
-    # AUTH FLIP (requested by A once their login was wired): real Auth0 enforcement.
-    # Public config per CONTRACTS §8. Audience is the EXACT API identifier — no
-    # trailing slash (Auth0 matches the string exactly).
-    os.environ.setdefault("AUTH0_DOMAIN", "dev-1xz0uq0mv6hryu17.us.auth0.com")
-    os.environ.setdefault("AUTH0_AUDIENCE", "https://api.reeledin.app")
+    # AUTH: reverted to DEV-FALLBACK 2026-07-18 so A can build Results-first with no auth
+    # friction (the SPA login flow isn't confirmed end-to-end yet). To RE-ENABLE real Auth0
+    # enforcement, uncomment BOTH lines below and redeploy — audience is the EXACT API
+    # identifier, NO trailing slash (Auth0 exact-matches). Verified reject/accept once before.
+    # os.environ.setdefault("AUTH0_DOMAIN", "dev-1xz0uq0mv6hryu17.us.auth0.com")
+    # os.environ.setdefault("AUTH0_AUDIENCE", "https://api.reeledin.app")
     # SCORING FLIP (team request): new tests batch-score on the A100 for real.
     # Expect status=scoring for minutes + ~$1-4/run; already-scored (seeded/
     # precomputed) tests still skip the GPU entirely, so the demo path is immune.
