@@ -12,11 +12,37 @@ Imports of D's modules are lazy so this file is importable in every image (the G
 image has no elevenlabs, the local venv may lack nothing but keys).
 """
 import asyncio
+import copy
 import os
 
 _sync_client = None
 _mem_threads: dict[str, str] = {}
 _configured = False
+
+# Human names for the default ElevenLabs voices (mirror of voice.py DEFAULT_VOICES).
+# record_test writes variant params into Backboard memory verbatim, so a raw voice_id
+# would surface in /tips as "stick with 21m00Tcm4TlvDq8ikWAM". Translate to the name.
+# TODO(D): promote a canonical VOICE_NAMES to generation/voice.py and import it here.
+VOICE_NAMES = {
+    "21m00Tcm4TlvDq8ikWAM": "Rachel",
+    "pNInz6obpgDQGcFmaJgB": "Adam",
+    "TxGEqnHWrfWFTfGW9XjX": "Josh",
+}
+
+
+def _humanize_variants(variants: list) -> list:
+    """Copy of variants with params.voice_id replaced by a readable params.voice —
+    so Backboard memory (and thus /tips) never echoes an opaque voice_id."""
+    out = []
+    for v in variants:
+        v = copy.deepcopy(v)
+        params = v.get("params") or {}
+        vid = params.pop("voice_id", None)
+        if vid:
+            params["voice"] = VOICE_NAMES.get(vid, "a custom voice")
+        v["params"] = params
+        out.append(v)
+    return out
 
 
 def real_mode() -> bool:
@@ -100,7 +126,8 @@ async def record_test_safe(user_id: str, test: dict, variants: list, winner_vari
     from backend.generation import llm
 
     try:
-        await asyncio.to_thread(llm.record_test, user_id, test, variants, winner_variant_id)
+        await asyncio.to_thread(
+            llm.record_test, user_id, test, _humanize_variants(variants), winner_variant_id)
     except Exception:
         pass
 
@@ -113,6 +140,6 @@ def record_test_sync_safe(user_id: str, test: dict, variants: list, winner_varia
     from backend.generation import llm
 
     try:
-        llm.record_test(user_id, test, variants, winner_variant_id)
+        llm.record_test(user_id, test, _humanize_variants(variants), winner_variant_id)
     except Exception:
         pass
