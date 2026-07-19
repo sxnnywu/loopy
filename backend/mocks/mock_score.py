@@ -1,9 +1,17 @@
-"""Canned ScoreObject matching CONTRACTS.md — for A (Kimi) & C (Seb) to build against."""
+"""Canned ScoreObject matching CONTRACTS.md §3 — for A (Kimi) & C (Seb) to build against."""
+import hashlib
 import math
 
 _W = {"default_mode": 0.30, "visual": 0.25, "language": 0.20, "auditory": 0.15, "motion": 0.10}
 _REGION = {"visual": "fusiform_face_area", "auditory": "primary_auditory",
            "language": "broca_area", "motion": "motion_mt", "default_mode": "prefrontal_dmn"}
+
+
+def _jitter(variant_id: str, salt: str, base: float, spread: float) -> float:
+    """Deterministic per-variant nudge in [base-spread/2, base+spread/2], ≥0."""
+    h = int(hashlib.sha256(f"{variant_id}:{salt}".encode()).hexdigest()[:8], 16) / 0xFFFFFFFF
+    return max(0.0, base + spread * (h - 0.5))
+
 
 def mock_score(variant_id: str = "var_demo0001", n: int = 18) -> dict:
     def curve(phase, amp):
@@ -15,12 +23,23 @@ def mock_score(variant_id: str = "var_demo0001", n: int = 18) -> dict:
     eng = [round(sum(_W[k] * networks[k][t] for k in _W), 3) for t in range(n)]
     third = max(1, n // 3)
     first = sum(eng[:third]) / third; last = sum(eng[-third:]) / third
-    metrics = {"peak": round(max(eng), 3), "sustained": round(sum(eng) / n, 3),
-               "retention": round(min(1.0, last / first) if first else 0.0, 3)}
+    # retention: last_third / (last_third + first_third) — bounded, non-saturating (CONTRACTS §3)
+    retention = round(last / (last + first), 3) if (last + first) else 0.5
+    metrics = {"peak": round(max(eng), 3), "sustained": round(sum(eng) / n, 3), "retention": retention}
     metrics["overall"] = round(0.5 * metrics["sustained"] + 0.3 * metrics["retention"] + 0.2 * metrics["peak"], 3)
     rt = [{"t": t, "top_network": max(networks, key=lambda k: networks[k][t]),
            "top_region": _REGION[max(networks, key=lambda k: networks[k][t])],
            "activation": round(max(networks[k][t] for k in networks), 3)} for t in range(n)]
+    # signals (§3 family B) — varied per variant so mock-mode comparisons pick a real winner
+    signals = {
+        "face_expression": round(_jitter(variant_id, "face", 0.55, 0.4), 4),
+        "speech_rate": round(_jitter(variant_id, "speech", 2.3, 1.0), 4),
+        "volume": round(_jitter(variant_id, "vol", 0.5, 0.3), 5),
+        "hand_gesture": round(_jitter(variant_id, "hand", 0.25, 0.2), 4),
+        "motion": round(_jitter(variant_id, "motion", 0.06, 0.04), 4),
+        "clarity": round(_jitter(variant_id, "clarity", 700, 300), 2),
+    }
     return {"variant_id": variant_id, "networks": networks, "engagement": eng, "metrics": metrics,
             "brain_frames": [f"media/{variant_id}_brain_{t:03d}.png" for t in range(n)],
-            "region_timeline": rt, "duration_sec": float(n), "sample_rate_hz": 1}
+            "region_timeline": rt, "signals": signals,
+            "duration_sec": float(n), "sample_rate_hz": 1}
