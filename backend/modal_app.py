@@ -148,7 +148,8 @@ def analyze_objective(subdir: str = "eval", names: str = "") -> dict:
     # Two workspace secrets (CONTRACTS §8). Last wins on key conflicts, so D's
     # reeled-in-secrets takes precedence for the generation keys (D owns rotation);
     # Mongo keys exist only in C's reeled-in.
-    secrets=[modal.Secret.from_name("reeled-in"), modal.Secret.from_name("reeled-in-secrets")],
+    secrets=[modal.Secret.from_name("reeled-in"), modal.Secret.from_name("reeled-in-secrets"),
+             modal.Secret.from_name("reeled-in-openrouter")],  # OPENROUTER_API_KEY for D's /suggest
 )
 @modal.asgi_app()
 def api():
