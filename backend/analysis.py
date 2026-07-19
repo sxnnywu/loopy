@@ -36,7 +36,10 @@ def _decisive_detail(decisive: str, variants: list, by_vid: dict) -> dict:
     values = [{"variant_id": v["id"], "label": v["label"], "value": value_for(v)}
               for v in variants if v["id"] in by_vid]
     values.sort(key=lambda x: (x["value"] is None, -(x["value"] or 0)))  # winner (higher) first
-    return {"component": decisive, "label": label, "values": values}
+    # render-verbatim caption naming what the numbers ARE (a brain value is a per-clip
+    # average; a production signal is a measured value — not an average of anything).
+    caption = f"Average {label} response" if family == "brain" else f"{label} (measured)"
+    return {"component": decisive, "label": label, "caption": caption, "values": values}
 
 
 def build_analysis(test: dict, variants: list, scores: list) -> dict:
