@@ -254,8 +254,11 @@ def score_test_gpu(test_id: str) -> dict:
         by_id = {v["_id"]: v for v in d.variants.find({"test_id": test_id})}
         ordered = [by_id[v] for v in test["variant_ids"] if v in by_id]
 
-        # joint batch: one session, one model load, ONE shared normalization scale
-        results = score_batch([v["media_key"] for v in ordered])
+        # joint batch: one session, one model load, ONE shared normalization scale.
+        # render_brains=True → per-second brain PNGs (brain_frames) rendered here and
+        # committed to the Volume below, so the Results flipbook works on live tests.
+        # Cost: adds nilearn render time (~tens of s/variant) to each A100 run.
+        results = score_batch([v["media_key"] for v in ordered], render_brains=True)
         for variant, result in zip(ordered, results):
             result["variant_id"] = variant["_id"]  # authoritative id
             d.scores.replace_one(
